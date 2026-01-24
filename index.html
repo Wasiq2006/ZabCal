@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 ZabCal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>🎓 ZabCal</h1>
+                    <p class="tagline">Track your academic performance</p>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Program Selector -->
+        <section class="section program-selector-section">
+            <div class="section-content">
+                <label for="programSelect" class="label">Select Your Program:</label>
+                <select id="programSelect" class="program-select">
+                    <option value="">-- Choose a program --</option>
+                    <option value="BSCS">BS Computer Science</option>
+                    <option value="BSAI">BS Artificial Intelligence</option>
+                    <option value="BSSE">BS Software Engineering</option>
+                    <option value="BBA">Bachelor of Business Administration</option>
+                    <option value="BSAF">BS Accounting & Finance</option>
+                    <option value="BSBA">BS Business Analytics</option>
+                    <option value="BSMS">BS Media Sciences</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Metrics Dashboard -->
+        <section class="section metrics-section">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Current CGPA</div>
+                    <div class="metric-value" id="cgpaValue">0.00</div>
+                    <div class="metric-info">Out of 4.00</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Total Credits</div>
+                    <div class="metric-value" id="creditsValue">0</div>
+                    <div class="metric-info" id="creditsInfo">0 remaining</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Standing</div>
+                    <div class="metric-value" id="standingValue">-</div>
+                    <div class="metric-info" id="standingInfo">Complete courses to determine</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Degree Progress</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-info" id="progressInfo">0%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CGPA Calculator -->
+        <section class="section calculator-section">
+            <div class="section-header">
+                <h2>CGPA Calculator</h2>
+            </div>
+
+            <div class="calculator-controls">
+                <div class="input-group">
+                    <div class="autocomplete-wrapper">
+                        <input 
+                            type="text" 
+                            id="courseCodeInput" 
+                            class="input-field" 
+                            placeholder="Enter course code or name (e.g., CSC 1101)"
+                            maxlength="50"
+                            autocomplete="off"
+                        >
+                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+                    </div>
+                    <input 
+                        type="number" 
+                        id="courseMarksInput" 
+                        class="input-field" 
+                        placeholder="Marks (0-100)"
+                        min="0"
+                        max="100"
+                        step="1"
+                    >
+                    <button class="btn-primary" id="addCourseBtn">Add Course</button>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-danger-secondary" id="clearAllBtn" style="display: none;">Clear All Courses</button>
+                </div>
+            </div>
+
+            <!-- Courses Table -->
+            <div class="courses-table-wrapper">
+                <table class="courses-table">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Credits</th>
+                            <th>Marks</th>
+                            <th>Grade</th>
+                            <th>GPA</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesTableBody">
+                        <tr class="empty-row">
+                            <td colspan="7">No courses added. Add a course to get started.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Semester Summary -->
+            <div class="semester-summary" id="semesterSummary" style="display: none;">
+                <div class="summary-row">
+                    <span class="summary-label">Total Credits:</span>
+                    <span class="summary-value" id="semesterTotalCredits">0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Total Grade Points:</span>
+                    <span class="summary-value" id="semesterGradePoints">0.00</span>
+                </div>
+                <div class="summary-row semester-gpa">
+                    <span class="summary-label">Semester GPA (SGPA):</span>
+                    <span class="summary-value" id="semesterGPA">0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grading Scale Table -->
+        <section class="section grading-section">
+            <div class="section-header">
+                <h2>SZABIST Grading Scale</h2>
+            </div>
+            <div class="grading-table-wrapper">
+                <table class="grading-table">
+                    <thead>
+                        <tr>
+                            <th>Marks</th>
+                            <th>Grade</th>
+                            <th>GPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>90–100</td>
+                            <td><span class="grade-badge grade-a-plus">A+</span></td>
+                            <td class="gpa-value">4.00</td>
+                        </tr>
+                        <tr>
+                            <td>85–89</td>
+                            <td><span class="grade-badge grade-a">A</span></td>
+                            <td class="gpa-value">3.75</td>
+                        </tr>
+                        <tr>
+                            <td>80–84</td>
+                            <td><span class="grade-badge grade-a-minus">A−</span></td>
+                            <td class="gpa-value">3.50</td>
+                        </tr>
+                        <tr>
+                            <td>75–79</td>
+                            <td><span class="grade-badge grade-b-plus">B+</span></td>
+                            <td class="gpa-value">3.25</td>
+                        </tr>
+                        <tr>
+                            <td>70–74</td>
+                            <td><span class="grade-badge grade-b">B</span></td>
+                            <td class="gpa-value">3.00</td>
+                        </tr>
+                        <tr>
+                            <td>66–69</td>
+                            <td><span class="grade-badge grade-b-minus">B−</span></td>
+                            <td class="gpa-value">2.75</td>
+                        </tr>
+                        <tr>
+                            <td>63–65</td>
+                            <td><span class="grade-badge grade-c-plus">C+</span></td>
+                            <td class="gpa-value">2.50</td>
+                        </tr>
+                        <tr>
+                            <td>60–62</td>
+                            <td><span class="grade-badge grade-c">C</span></td>
+                            <td class="gpa-value">2.00</td>
+                        </tr>
+                        <tr>
+                            <td>55–59</td>
+                            <td><span class="grade-badge grade-c-minus">C−</span></td>
+                            <td class="gpa-value">1.50</td>
+                        </tr>
+                        <tr class="grade-fail">
+                            <td>0–54</td>
+                            <td><span class="grade-badge grade-f">F</span></td>
+                            <td class="gpa-value">0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <!-- Contribute Section -->
+                <div class="contribute-card">
+                    <h3 class="contribute-title">Contribute / Suggestions</h3>
+                    <p class="contribute-subtitle">Have ideas to improve this tool? Found a bug? Want to add your program's curriculum?</p>
+                    
+                    <div class="contribute-buttons">
+                        <a href="https://github.com/Wasiq2006" target="_blank" rel="noopener noreferrer" class="btn-outline">
+                            Contribute on GitHub
+                        </a>
+                        <a href="mailto:wasiqmansoor69@gmail.com?subject=SZABIST%20CGPA%20Calculator%20–%20Suggestions" class="btn-outline">
+                            Send Suggestions via Email
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Divider -->
+                <div class="footer-divider"></div>
+                
+                <!-- Creator Credit -->
+                <div class="footer-credit">
+                    Made by <span class="creator-name">Wasiq</span>
+                </div>
+                
+                <!-- Contact Icons -->
+                <div class="footer-icons">
+                    <a href="mailto:wasiqmansoor69@gmail.com" class="footer-icon" aria-label="Send email" title="Email">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                    </a>
+                    
+                    <a href="https://github.com/Wasiq2006" target="_blank" rel="noopener noreferrer" class="footer-icon" aria-label="GitHub profile" title="GitHub">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </a>
+                    
+                    <a href="https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a" target="_blank" rel="noopener noreferrer" class="footer-icon" aria-label="LinkedIn profile" title="LinkedIn">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                    </a>
+                </div>
+                
+                <!-- Privacy Notice -->
+                <div class="footer-notice">
+                    All calculations run locally in your browser. No data is sent to any server.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
