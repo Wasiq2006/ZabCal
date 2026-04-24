@@ -267,7 +267,7 @@ We welcome contributions! If you have suggestions, improvements, or want to add 
 
 ### Contact Information
 
-- **Email**: [wasiqmansoor69@gmail.com](mailto:wasiqmansoor69@gmail.com)
+- **Email**: [wasiqmansoor69@gmail.com](mailto:wasiqmansoor2006@gmail.com)
 - **GitHub**: [@Wasiq2006](https://github.com/Wasiq2006)
 - **LinkedIn**: [Muhammad Wasiq Mansoor](https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a)
 
