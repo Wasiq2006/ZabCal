@@ -5,13 +5,13 @@
 const GRADING_POLICY = {
     90: { grade: 'A+', gpa: 4.0 },
     85: { grade: 'A', gpa: 3.75 },
-    80: { grade: 'B+', gpa: 3.5 },
-    75: { grade: 'B', gpa: 3.25 },
-    70: { grade: 'B-', gpa: 3.0 },
-    66: { grade: 'C+', gpa: 2.75 },
-    63: { grade: 'C', gpa: 2.5 },
-    60: { grade: 'C-', gpa: 2.0 },
-    55: { grade: 'D', gpa: 1.5 },
+    80: { grade: 'A-', gpa: 3.5 },
+    75: { grade: 'B+', gpa: 3.25 },
+    70: { grade: 'B', gpa: 3.0 },
+    66: { grade: 'B-', gpa: 2.75 },
+    63: { grade: 'C+', gpa: 2.5 },
+    60: { grade: 'C', gpa: 2.0 },
+    55: { grade: 'C-', gpa: 1.5 },
     0: { grade: 'F', gpa: 0.0 }
 };
 
@@ -199,6 +199,7 @@ class UIManager {
     }
 
     setupEventListeners() {
+        if (this.setupSemesterListeners) this.setupSemesterListeners();
         // Program selection
         document.getElementById('programSelect').addEventListener('change', (e) => {
             this.stateManager.setState({ program: e.target.value });
@@ -509,14 +510,24 @@ class UIManager {
         const state = this.stateManager.getState();
         const courses = state.courses;
 
+        // Combine courses from current table and tracked semesters
+        let allCompletedCourses = courses.filter(c => c.marks !== null);
+        if (state.semesters) {
+            Object.values(state.semesters).forEach(sem => {
+                if (sem.courses) {
+                    allCompletedCourses = allCompletedCourses.concat(sem.courses.filter(c => c.marks !== null));
+                }
+            });
+        }
+
         // Calculate metrics
-        const completedCourses = courses.filter(c => c.marks !== null);
-        const totalCredits = completedCourses.reduce((sum, c) => sum + c.credits, 0);
+        const completedCoursesForSummary = courses.filter(c => c.marks !== null);
+        const totalCredits = allCompletedCourses.reduce((sum, c) => sum + c.credits, 0);
         const totalRemainingCredits = state.program
             ? this.curriculumHandler.getProgramTotalCredits(state.program) - totalCredits
             : 0;
 
-        const cgpa = this.gradingEngine.calculateCGPA(completedCourses);
+        const cgpa = this.gradingEngine.calculateCGPA(allCompletedCourses);
         const standing = this.gradingEngine.getStanding(totalCredits, cgpa);
         const programTotal = state.program ? this.curriculumHandler.getProgramTotalCredits(state.program) : 132;
         const progress = programTotal > 0 ? (totalCredits / programTotal) * 100 : 0;
@@ -537,8 +548,11 @@ class UIManager {
         document.getElementById('progressFill').style.width = `${Math.min(100, progress)}%`;
         document.getElementById('progressInfo').textContent = `${Math.round(progress)}%`;
 
-        // Update semester summary
-        this.updateSemesterSummary(completedCourses);
+        // Render Semesters list
+        if (this.renderSemestersList) this.renderSemestersList();
+
+        // Update active table semester summary
+        this.updateSemesterSummary(completedCoursesForSummary);
     }
 
     updateSemesterSummary(courses) {
@@ -614,6 +628,211 @@ class UIManager {
     showError(message) {
         alert(message);
     }
+
+    // --- SEMESTER TRACKING LOGIC --- //
+
+    setupSemesterListeners() {
+        this.semesterMode = '';
+        const modal = document.getElementById('addSemesterModal');
+        const step1 = document.getElementById('semesterStep1');
+        const step2 = document.getElementById('semesterStep2');
+        const semYear = document.getElementById('semYear');
+        
+        document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            step1.classList.remove('hidden');
+            step2.classList.add('hidden');
+            semYear.value = new Date().getFullYear();
+        });
+
+        document.getElementById('btnCloseAddModal')?.addEventListener('click', () => {
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        });
+
+        document.getElementById('btnSaveCurrent')?.addEventListener('click', () => {
+            this.semesterMode = 'save_current';
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            step2.classList.add('flex');
+        });
+
+        document.getElementById('btnStartFresh')?.addEventListener('click', () => {
+            this.semesterMode = 'start_fresh';
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            step2.classList.add('flex');
+        });
+
+        document.getElementById('btnConfirmSem')?.addEventListener('click', () => {
+            const semNum = document.getElementById('semNumber').value;
+            const semTerm = document.getElementById('semTerm').value;
+            const year = document.getElementById('semYear').value;
+            
+            if (!year) return this.showError("Please enter a year");
+
+            const state = this.stateManager.getState();
+            state.semesters = state.semesters || {};
+            
+            const semKey = `S${semNum}-${year}`;
+            let coursesToSave = [];
+            
+            if (this.semesterMode === 'save_current') {
+                coursesToSave = [...(state.courses || [])];
+                this.stateManager.setState({ courses: [] }); // Clear current table
+                this.renderCoursesTable(this.stateManager.getState());
+            }
+
+            const activeCompleted = coursesToSave.filter(c => c.marks !== null);
+            const sgpa = this.gradingEngine.calculateSGPA(activeCompleted);
+            const credits = activeCompleted.reduce((s, c) => s + c.credits, 0);
+
+            state.semesters[semKey] = {
+                id: semKey,
+                number: semNum,
+                term: semTerm,
+                year: year,
+                courses: coursesToSave,
+                sgpa: sgpa,
+                credits: credits,
+                timestamp: Date.now()
+            };
+
+            this.stateManager.setState({ semesters: state.semesters });
+            
+            // Close Modal & Go to View
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                this.navigateTo('semesters');
+                this.updateAllMetrics();
+            }, 300);
+        });
+
+        document.getElementById('viewAllSemestersBtn')?.addEventListener('click', () => this.navigateTo('semesters'));
+        document.getElementById('btnBackToCalc')?.addEventListener('click', () => this.navigateTo('calculator'));
+        document.getElementById('btnCloseDetails')?.addEventListener('click', () => {
+            document.getElementById('semesterDetailsView').classList.add('hidden');
+        });
+        
+        document.getElementById('btnDeleteSemester')?.addEventListener('click', () => {
+            if(!this.currentlyViewedSemesterId) return;
+            const state = this.stateManager.getState();
+            if(confirm('Are you sure you want to delete this semester?')) {
+                delete state.semesters[this.currentlyViewedSemesterId];
+                this.stateManager.setState({ semesters: state.semesters });
+                document.getElementById('semesterDetailsView').classList.add('hidden');
+                this.updateAllMetrics();
+            }
+        });
+    }
+
+    navigateTo(view) {
+        if (view === 'semesters') {
+            document.getElementById('calculatorView').classList.add('hidden');
+            document.getElementById('semestersView').classList.remove('hidden');
+        } else {
+            document.getElementById('semestersView').classList.add('hidden');
+            document.getElementById('calculatorView').classList.remove('hidden');
+        }
+    }
+
+    renderSemestersList() {
+        const state = this.stateManager.getState();
+        const semesters = state.semesters || {};
+        
+        const miniList = document.getElementById('miniSemestersList');
+        const grid = document.getElementById('semestersGrid');
+        
+        if (!miniList || !grid) return;
+        
+        let sItems = Object.values(semesters).sort((a,b) => b.timestamp - a.timestamp);
+        
+        if (sItems.length === 0) {
+            miniList.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full opacity-50">
+                    <span class="material-symbols-outlined text-3xl mb-2">school</span>
+                    <p class="text-xs text-center font-medium">No semesters added yet.</p>
+                </div>`;
+            grid.innerHTML = `
+                <div class="col-span-full py-12 text-center text-on-surface-variant bg-surface-container rounded-2xl border border-outline-variant/30">
+                    <span class="material-symbols-outlined text-5xl mb-4 opacity-50">auto_stories</span>
+                    <p class="font-medium">You haven't tracked any semesters yet.</p>
+                </div>`;
+            return;
+        }
+
+        miniList.innerHTML = sItems.map(sem => `
+            <div class="bg-surface-container-high p-3 rounded-xl border border-outline-variant/30 cursor-pointer hover:border-primary transition-colors flex justify-between items-center" onclick="window.uiManager.openSemDetails('${sem.id}')">
+                <div>
+                    <h5 class="text-xs font-bold text-on-surface">${sem.term} ${sem.year}</h5>
+                    <p class="text-[9px] text-on-surface-variant font-medium">Sem ${sem.number} • ${sem.credits} Cr</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-black text-primary">${sem.sgpa.toFixed(2)}</p>
+                </div>
+            </div>
+        `).join('');
+
+        grid.innerHTML = sItems.map(sem => `
+            <div class="bg-surface-container rounded-3xl p-6 border border-outline-variant/30 hover:border-primary/50 transition-all hover:shadow-[0_10px_40px_-10px_rgba(39,24,126,0.2)] cursor-pointer group" onclick="window.uiManager.openSemDetails('${sem.id}')">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <span class="text-[10px] font-black uppercase text-primary tracking-widest bg-primary/10 px-3 py-1 rounded-full">Semester ${sem.number}</span>
+                    </div>
+                </div>
+                <h3 class="text-xl font-black text-on-surface mb-6 group-hover:text-primary transition-colors">${sem.term} ${sem.year}</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-surface-container-high rounded-xl p-4 border border-outline-variant/20">
+                        <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">SGPA</p>
+                        <p class="text-2xl font-black text-primary">${sem.sgpa.toFixed(2)}</p>
+                    </div>
+                    <div class="bg-surface-container-high rounded-xl p-4 border border-outline-variant/20">
+                        <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">Credits</p>
+                        <p class="text-2xl font-black text-on-surface">${sem.credits}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openSemDetails(id) {
+        this.navigateTo('semesters');
+        this.currentlyViewedSemesterId = id;
+        const sem = this.stateManager.getState().semesters[id];
+        if(!sem) return;
+
+        document.getElementById('semesterDetailsView').classList.remove('hidden');
+        document.getElementById('detailSemTitle').textContent = `${sem.term} ${sem.year} (Semester ${sem.number})`;
+        document.getElementById('detailSemGPA').textContent = sem.sgpa.toFixed(2);
+        document.getElementById('detailSemCredits').textContent = sem.credits;
+
+        const tbody = document.getElementById('detailSemCourses');
+        if(!sem.courses || sem.courses.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = sem.courses.map(course => {
+            const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
+            const gradeStr = gradeObj ? gradeObj.grade : '-';
+            return `
+                <tr class="hover:bg-surface-container-high/50 transition-colors border-b border-outline-variant/10">
+                    <td class="py-3 pr-4">
+                        <div class="font-bold text-on-surface text-sm break-all max-w-[200px] truncate" title="${course.name}">${course.code}</div>
+                        <div class="text-[10px] text-on-surface-variant truncate max-w-[200px]" title="${course.name}">${course.name}</div>
+                    </td>
+                    <td class="py-3 text-center">${course.credits}</td>
+                    <td class="py-3 text-center">${course.marks !== null ? course.marks : '-'}</td>
+                    <td class="py-3 text-right font-black text-primary">${gradeStr}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        // Scroll into view gently
+        document.getElementById('semesterDetailsView').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
 
 // ============================================
@@ -621,5 +840,5 @@ class UIManager {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    new UIManager();
+    window.uiManager = new UIManager();
 });
