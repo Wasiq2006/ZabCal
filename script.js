@@ -73,30 +73,8 @@ class StateManager {
 
 class CurriculumHandler {
     constructor() {
-        this.buildCourseLookup();
-    }
-
-    buildCourseLookup() {
-        this.courseLookup = {};
-        const curriculum = DATABASE.curriculum;
-        Object.keys(curriculum).forEach(programKey => {
-            const program = curriculum[programKey];
-            Object.keys(program.semesters).forEach(semesterNum => {
-                program.semesters[semesterNum].forEach(course => {
-                    if (!this.courseLookup[course.code]) {
-                        this.courseLookup[course.code] = {
-                            code: course.code,
-                            name: course.name,
-                            credits: course.credits,
-                            programs: []
-                        };
-                    }
-                    if (!this.courseLookup[course.code].programs.includes(programKey)) {
-                        this.courseLookup[course.code].programs.push(programKey);
-                    }
-                });
-            });
-        });
+        // Trigger cache build once on init
+        DATABASE.buildCourseLookup();
     }
 
     getCourseInfo(courseCode) {
@@ -121,11 +99,13 @@ class CurriculumHandler {
 // ============================================
 
 class GradingEngine {
+    constructor() {
+        this._thresholds = Object.keys(GRADING_POLICY).map(Number).sort((a, b) => b - a);
+    }
+
     calculateGrade(marks) {
         if (marks < 0 || marks > 100) return null;
-
-        const thresholds = Object.keys(GRADING_POLICY).map(Number).sort((a, b) => b - a);
-        for (let threshold of thresholds) {
+        for (const threshold of this._thresholds) {
             if (marks >= threshold) {
                 return GRADING_POLICY[threshold];
             }
@@ -175,12 +155,18 @@ class UIManager {
         this.stateManager = new StateManager();
         this.curriculumHandler = new CurriculumHandler();
         this.gradingEngine = new GradingEngine();
+        this._autocompleteTimeout = null;
+        this.currentlyViewedSemesterId = null;
+        this.semesterMode = '';
         this.initializeUI();
     }
 
     initializeUI() {
+        this.initChart();
         this.setupTheme();
         this.setupEventListeners();
+        this.setupSemesterListeners();
+        this.setupDataManagementListeners();
         this.restoreState();
         this.updateAllMetrics();
     }
@@ -188,18 +174,40 @@ class UIManager {
     setupTheme() {
         const theme = this.stateManager.getState().theme;
         if (theme === 'dark') {
-            document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
+        this._updateThemeIcon();
 
         document.getElementById('themeToggle').addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
             this.stateManager.setState({ theme: isDark ? 'dark' : 'light' });
+            this._updateThemeIcon();
+            // Re-render chart with correct theme colors
+            if (this.gradeChart) {
+                const state = this.stateManager.getState();
+                let all = (state.courses || []).filter(c => c.marks !== null);
+                Object.values(state.semesters || {}).forEach(s => {
+                    if (s.courses) all = all.concat(s.courses.filter(c => c.marks !== null));
+                });
+                this.updateGradeChart(all);
+            }
         });
     }
 
+    _updateThemeIcon() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const btn = document.getElementById('themeToggle');
+        if (!btn) return;
+        const sun = btn.querySelector('.icon-sun');
+        const moon = btn.querySelector('.icon-moon');
+        if (sun) sun.style.display = isDark ? 'none' : 'block';
+        if (moon) moon.style.display = isDark ? 'block' : 'none';
+    }
+
     setupEventListeners() {
-        if (this.setupSemesterListeners) this.setupSemesterListeners();
         // Program selection
         document.getElementById('programSelect').addEventListener('change', (e) => {
             this.stateManager.setState({ program: e.target.value });
@@ -212,39 +220,34 @@ class UIManager {
         let highlightedIndex = -1;
         let currentSuggestions = [];
 
-        courseCodeInput.addEventListener('input', (e) => {
-            const input = e.target.value.trim().toUpperCase();
-            if (input.length === 0) {
-                autocompleteSuggestions.classList.remove('show');
-                currentSuggestions = [];
-                return;
-            }
-
-            // Get all available courses
-            const allCourses = this.curriculumHandler.getAllCourseCodes();
-            const inputLower = input.toLowerCase();
-            
-            // Filter by both course code AND course name
-            const matching = allCourses
-                .filter(code => {
-                    const courseInfo = this.curriculumHandler.getCourseInfo(code);
-                    if (!courseInfo) return false;
-                    
-                    // Match by code or by course name
-                    return code.toLowerCase().includes(inputLower) || 
-                           courseInfo.name.toLowerCase().includes(inputLower);
-                })
-                .slice(0, 8);
-
-            if (matching.length === 0) {
-                autocompleteSuggestions.classList.remove('show');
-                currentSuggestions = [];
-                return;
-            }
-
-            currentSuggestions = matching;
-            highlightedIndex = -1;
-            this.renderAutocompleteSuggestions(matching);
+        courseCodeInput.addEventListener('input', () => {
+            clearTimeout(this._autocompleteTimeout);
+            this._autocompleteTimeout = setTimeout(() => {
+                const input = courseCodeInput.value.trim().toUpperCase();
+                if (input.length === 0) {
+                    autocompleteSuggestions.classList.remove('show');
+                    currentSuggestions = [];
+                    return;
+                }
+                const allCourses = this.curriculumHandler.getAllCourseCodes();
+                const inputLower = input.toLowerCase();
+                const matching = allCourses
+                    .filter(code => {
+                        const courseInfo = this.curriculumHandler.getCourseInfo(code);
+                        if (!courseInfo) return false;
+                        return code.toLowerCase().includes(inputLower) ||
+                               courseInfo.name.toLowerCase().includes(inputLower);
+                    })
+                    .slice(0, 8);
+                if (matching.length === 0) {
+                    autocompleteSuggestions.classList.remove('show');
+                    currentSuggestions = [];
+                    return;
+                }
+                currentSuggestions = matching;
+                highlightedIndex = -1;
+                this.renderAutocompleteSuggestions(matching);
+            }, 80);
         });
 
         courseCodeInput.addEventListener('keydown', (e) => {
@@ -410,9 +413,9 @@ class UIManager {
         if (marks === '') {
             course.marks = null;
         } else {
-            const marksNum = parseInt(marks);
-            if (marksNum < 0 || marksNum > 100) {
-                this.showError('Marks must be between 0 and 100');
+            const marksNum = Math.round(parseFloat(marks));
+            if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
+                this.showToast('Marks must be between 0 and 100', 'error');
                 return;
             }
             course.marks = marksNum;
@@ -548,11 +551,12 @@ class UIManager {
         document.getElementById('progressFill').style.width = `${Math.min(100, progress)}%`;
         document.getElementById('progressInfo').textContent = `${Math.round(progress)}%`;
 
-        // Render Semesters list
         if (this.renderSemestersList) this.renderSemestersList();
 
         // Update active table semester summary
         this.updateSemesterSummary(completedCoursesForSummary);
+
+        if (this.updateGradeChart) this.updateGradeChart(allCompletedCourses);
     }
 
     updateSemesterSummary(courses) {
@@ -625,8 +629,27 @@ class UIManager {
         document.getElementById('courseMarksInput').focus();
     }
 
+    showToast(message, type = 'error') {
+        const container = document.getElementById('toastContainer');
+        if (!container) { alert(message); return; }
+        const toast = document.createElement('div');
+        const icons = { error: 'error', success: 'check_circle', info: 'info' };
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type] || 'info'}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 350);
+        }, 3000);
+    }
+
     showError(message) {
-        alert(message);
+        this.showToast(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showToast(message, 'success');
     }
 
     // --- SEMESTER TRACKING LOGIC --- //
@@ -659,10 +682,13 @@ class UIManager {
         });
 
         document.getElementById('btnStartFresh')?.addEventListener('click', () => {
-            this.semesterMode = 'start_fresh';
-            step1.classList.add('hidden');
-            step2.classList.remove('hidden');
-            step2.classList.add('flex');
+            if (confirm("This will clear your current table. Are you sure?")) {
+                this.clearAllCourses();
+                
+                // Close Modal
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
         });
 
         document.getElementById('btnConfirmSem')?.addEventListener('click', () => {
@@ -675,13 +701,12 @@ class UIManager {
             const state = this.stateManager.getState();
             state.semesters = state.semesters || {};
             
-            const semKey = `S${semNum}-${year}`;
+            const semKey = `S${semNum}-${semTerm}-${year}`;
             let coursesToSave = [];
             
             if (this.semesterMode === 'save_current') {
                 coursesToSave = [...(state.courses || [])];
-                this.stateManager.setState({ courses: [] }); // Clear current table
-                this.renderCoursesTable(this.stateManager.getState());
+                this.clearAllCourses(); // Clear current table UI and state
             }
 
             const activeCompleted = coursesToSave.filter(c => c.marks !== null);
@@ -729,13 +754,37 @@ class UIManager {
     }
 
     navigateTo(view) {
-        if (view === 'semesters') {
-            document.getElementById('calculatorView').classList.add('hidden');
-            document.getElementById('semestersView').classList.remove('hidden');
-        } else {
-            document.getElementById('semestersView').classList.add('hidden');
-            document.getElementById('calculatorView').classList.remove('hidden');
-        }
+        const views = {
+            calculator: document.getElementById('calculatorView'),
+            semesters: document.getElementById('semestersView'),
+            about: document.getElementById('aboutView')
+        };
+
+        const incoming = views[view] || views.calculator;
+
+        // Hide all views
+        Object.values(views).forEach(v => {
+            if (v !== incoming) {
+                v.style.opacity = '0';
+                v.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    v.classList.add('hidden');
+                    v.style.opacity = '';
+                    v.style.transform = '';
+                }, 200);
+            }
+        });
+
+        // Show incoming view
+        incoming.classList.remove('hidden');
+        incoming.style.opacity = '0';
+        incoming.style.transform = 'translateY(10px)';
+        requestAnimationFrame(() => {
+            incoming.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            incoming.style.opacity = '1';
+            incoming.style.transform = 'translateY(0)';
+            setTimeout(() => { incoming.style.transition = ''; }, 350);
+        });
     }
 
     renderSemestersList() {
@@ -832,6 +881,126 @@ class UIManager {
         
         // Scroll into view gently
         document.getElementById('semesterDetailsView').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    setupDataManagementListeners() {
+        document.getElementById('btnExportData')?.addEventListener('click', () => {
+            const state = this.stateManager.getState();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "zabcal_backup_" + new Date().toISOString().split('T')[0] + ".json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        });
+
+        const importInput = document.getElementById('importDataInput');
+        document.getElementById('btnImportData')?.addEventListener('click', () => {
+            importInput.click();
+        });
+
+        importInput?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedState = JSON.parse(event.target.result);
+                    if (importedState && typeof importedState === 'object') {
+                        this.stateManager.setState(importedState);
+                        this.initializeUI();
+                        this.showSuccess('Data successfully imported!');
+                    } else {
+                        this.showError('Invalid backup file formatting.');
+                    }
+                } catch (error) {
+                    console.error('Error importing backup:', error);
+                    this.showError('Failed to parse backup file.');
+                }
+                importInput.value = ''; // Reset
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    initChart() {
+        const ctx = document.getElementById('gradeDistributionChart');
+        if (!ctx) return;
+        
+        // Ensure Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            setTimeout(() => this.initChart(), 200);
+            return;
+        }
+
+        this.gradeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'],
+                datasets: [{
+                    label: 'Grade Count',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: 'rgba(39, 24, 126, 0.7)',
+                    borderColor: '#27187e',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: {},
+                        grid: {}
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: {}
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    updateGradeChart(courses) {
+        if (!this.gradeChart) return;
+        
+        const gradeCounts = { 'A+':0, 'A':0, 'A-':0, 'B+':0, 'B':0, 'B-':0, 'C+':0, 'C':0, 'C-':0, 'F':0 };
+        let hasData = false;
+
+        courses.forEach(c => {
+            const gradeObj = this.gradingEngine.calculateGrade(c.marks);
+            if (gradeObj && gradeCounts.hasOwnProperty(gradeObj.grade)) {
+                gradeCounts[gradeObj.grade]++;
+                hasData = true;
+            }
+        });
+
+        const msgEl = document.getElementById('noChartDataMsg');
+        if (hasData) {
+            msgEl?.classList.add('hidden');
+            this.gradeChart.canvas.style.display = 'block';
+            this.gradeChart.data.datasets[0].data = Object.values(gradeCounts);
+            
+            // Adjust colors based on theme
+            const isDark = document.documentElement.classList.contains('dark');
+            this.gradeChart.options.scales.x.ticks.color = isDark ? '#c8c4d4' : '#474552';
+            this.gradeChart.options.scales.y.ticks.color = isDark ? '#c8c4d4' : '#474552';
+            this.gradeChart.options.scales.x.grid.color = isDark ? 'rgba(198, 192, 255, 0.1)' : 'rgba(200, 196, 212, 0.2)';
+            this.gradeChart.options.scales.y.grid.color = isDark ? 'rgba(198, 192, 255, 0.1)' : 'rgba(200, 196, 212, 0.2)';
+            
+            this.gradeChart.update();
+        } else {
+            msgEl?.classList.remove('hidden');
+            this.gradeChart.canvas.style.display = 'none';
+        }
     }
 }
 

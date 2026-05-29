@@ -13,6 +13,9 @@
  */
 
 const DATABASE = {
+  // Cached lookup
+  _courseLookupCache: null,
+
   // ============================================
   // CURRICULUM DATA
   // ============================================
@@ -585,11 +588,14 @@ const DATABASE = {
    * Build a flat lookup for all courses
    */
   buildCourseLookup() {
+    if (this._courseLookupCache) return this._courseLookupCache;
     const lookup = {};
     Object.keys(this.curriculum).forEach(programKey => {
       const program = this.curriculum[programKey];
       Object.keys(program.semesters).forEach(semesterNum => {
         program.semesters[semesterNum].forEach(course => {
+          // Skip generic elective placeholders
+          if (course.code.includes('xxxx') || course.code.includes('4xxx')) return;
           if (!lookup[course.code]) {
             lookup[course.code] = {
               code: course.code,
@@ -604,6 +610,7 @@ const DATABASE = {
         });
       });
     });
+    this._courseLookupCache = lookup;
     return lookup;
   },
 
