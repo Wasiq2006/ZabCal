@@ -158,15 +158,20 @@ class UIManager {
         this._autocompleteTimeout = null;
         this.currentlyViewedSemesterId = null;
         this.semesterMode = '';
+        this._activeView = 'calculator';
+        this._isInitialized = false;
         this.initializeUI();
     }
 
     initializeUI() {
-        this.initChart();
-        this.setupTheme();
-        this.setupEventListeners();
-        this.setupSemesterListeners();
-        this.setupDataManagementListeners();
+        if (!this._isInitialized) {
+            this.initChart();
+            this.setupTheme();
+            this.setupEventListeners();
+            this.setupSemesterListeners();
+            this.setupDataManagementListeners();
+            this._isInitialized = true;
+        }
         this.restoreState();
         this.updateAllMetrics();
     }
@@ -311,14 +316,24 @@ class UIManager {
 
     restoreState() {
         const state = this.stateManager.getState();
+        const tbody = document.getElementById('coursesTableBody');
+
+        // Always reset table UI before restoring to avoid duplicate rows.
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
+        document.getElementById('clearAllBtn').style.display = 'none';
+
         if (state.program) {
             document.getElementById('programSelect').value = state.program;
+        } else {
+            document.getElementById('programSelect').value = '';
         }
+
         if (state.courses && state.courses.length > 0) {
-            state.courses.forEach((course, index) => {
+            state.courses.forEach((course) => {
                 this.addCourseToTable(course);
-                this.updateGradeDisplay(index);
             });
+
+            state.courses.forEach((_, index) => this.updateGradeDisplay(index));
         }
     }
 
@@ -707,6 +722,14 @@ class UIManager {
             if (this.semesterMode === 'save_current') {
                 coursesToSave = [...(state.courses || [])];
                 this.clearAllCourses(); // Clear current table UI and state
+            } else {
+                this.showError('Please select "Use Current Table Courses" to save a semester.');
+                return;
+            }
+
+            if (coursesToSave.length === 0) {
+                this.showError('No courses found in table. Add courses before saving a semester.');
+                return;
             }
 
             const activeCompleted = coursesToSave.filter(c => c.marks !== null);
@@ -762,28 +785,43 @@ class UIManager {
 
         const incoming = views[view] || views.calculator;
 
-        // Hide all views
-        Object.values(views).forEach(v => {
-            if (v !== incoming) {
-                v.style.opacity = '0';
-                v.style.transform = 'translateY(10px)';
-                setTimeout(() => {
-                    v.classList.add('hidden');
-                    v.style.opacity = '';
-                    v.style.transform = '';
-                }, 200);
+        this._activeView = view in views ? view : 'calculator';
+
+        Object.entries(views).forEach(([name, element]) => {
+            if (!element) return;
+
+            if (name === this._activeView) {
+                element.classList.remove('hidden');
+                element.classList.add('view-entering');
+                requestAnimationFrame(() => {
+                    element.classList.add('view-entering-active');
+                });
+            } else {
+                element.classList.add('hidden');
+                element.classList.remove('view-entering', 'view-entering-active');
             }
         });
 
-        // Show incoming view
-        incoming.classList.remove('hidden');
-        incoming.style.opacity = '0';
-        incoming.style.transform = 'translateY(10px)';
-        requestAnimationFrame(() => {
-            incoming.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            incoming.style.opacity = '1';
-            incoming.style.transform = 'translateY(0)';
-            setTimeout(() => { incoming.style.transition = ''; }, 350);
+        const detailsView = document.getElementById('semesterDetailsView');
+        if (detailsView && this._activeView !== 'semesters') {
+            detailsView.classList.add('hidden');
+        }
+
+        this._syncNavState(this._activeView);
+        if (this._activeView === 'about') {
+            const aboutCard = document.getElementById('aboutHeroCard');
+            aboutCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    _syncNavState(activeView) {
+        document.querySelectorAll('[data-nav-view]').forEach(link => {
+            const isActive = link.dataset.navView === activeView;
+            link.classList.toggle('bg-primary/10', isActive);
+            link.classList.toggle('text-primary', isActive);
+            link.classList.toggle('hover:bg-primary/10', !isActive);
+            link.classList.toggle('text-on-surface-variant', !isActive);
+            link.classList.toggle('hover:text-primary', !isActive);
         });
     }
 
@@ -796,7 +834,9 @@ class UIManager {
         
         if (!miniList || !grid) return;
         
-        let sItems = Object.values(semesters).sort((a,b) => b.timestamp - a.timestamp);
+        let sItems = Object.values(semesters)
+            .filter(sem => sem && sem.id && sem.term && sem.year)
+            .sort((a, b) => b.timestamp - a.timestamp);
         
         if (sItems.length === 0) {
             miniList.innerHTML = `
@@ -886,12 +926,13 @@ class UIManager {
     setupDataManagementListeners() {
         document.getElementById('btnExportData')?.addEventListener('click', () => {
             const state = this.stateManager.getState();
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
             const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "zabcal_backup_" + new Date().toISOString().split('T')[0] + ".json");
-            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.href = URL.createObjectURL(blob);
+            downloadAnchorNode.download = "zabcal_backup_" + new Date().toISOString().split('T')[0] + ".json";
+            document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
+            URL.revokeObjectURL(downloadAnchorNode.href);
             downloadAnchorNode.remove();
         });
 
@@ -904,24 +945,51 @@ class UIManager {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const importedState = JSON.parse(event.target.result);
-                    if (importedState && typeof importedState === 'object') {
-                        this.stateManager.setState(importedState);
-                        this.initializeUI();
-                        this.showSuccess('Data successfully imported!');
-                    } else {
-                        this.showError('Invalid backup file formatting.');
+            const normalizeImportedState = (rawText) => {
+                let text = (rawText || '').trim();
+
+                if (text.startsWith('data:application/json') || text.startsWith('data:text/json')) {
+                    const commaIndex = text.indexOf(',');
+                    if (commaIndex !== -1) {
+                        text = decodeURIComponent(text.slice(commaIndex + 1));
                     }
-                } catch (error) {
+                }
+
+                if (text.charCodeAt(0) === 0xFEFF) {
+                    text = text.slice(1);
+                }
+
+                const parsed = JSON.parse(text);
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Backup must contain an object payload.');
+                }
+
+                return {
+                    ...this.stateManager.getDefaultState(),
+                    ...parsed,
+                    courses: Array.isArray(parsed.courses) ? parsed.courses : [],
+                    semesters: parsed.semesters && typeof parsed.semesters === 'object' && !Array.isArray(parsed.semesters)
+                        ? parsed.semesters
+                        : {}
+                };
+            };
+
+            file.text()
+                .then((rawText) => {
+                    const importedState = normalizeImportedState(rawText);
+                    this.stateManager.setState(importedState);
+                    this.restoreState();
+                    this.updateAllMetrics();
+                    this.navigateTo('calculator');
+                    this.showSuccess('Data successfully imported!');
+                })
+                .catch((error) => {
                     console.error('Error importing backup:', error);
                     this.showError('Failed to parse backup file.');
-                }
-                importInput.value = ''; // Reset
-            };
-            reader.readAsText(file);
+                })
+                .finally(() => {
+                    importInput.value = '';
+                });
         });
     }
 
