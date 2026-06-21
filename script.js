@@ -241,7 +241,7 @@ class UIManager {
                         const courseInfo = this.curriculumHandler.getCourseInfo(code);
                         if (!courseInfo) return false;
                         return code.toLowerCase().includes(inputLower) ||
-                               courseInfo.name.toLowerCase().includes(inputLower);
+                            courseInfo.name.toLowerCase().includes(inputLower);
                     })
                     .slice(0, 8);
                 if (matching.length === 0) {
@@ -288,18 +288,18 @@ class UIManager {
         document.getElementById('addCourseBtn').addEventListener('click', () => {
             const courseCode = courseCodeInput.value.trim();
             const marks = document.getElementById('courseMarksInput').value.trim();
-            
+
             if (!marks) {
                 this.showError('Please enter marks for the course');
                 return;
             }
-            
+
             const marksNum = parseFloat(marks);
             if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
                 this.showError('Please enter valid marks between 0 and 100');
                 return;
             }
-            
+
             this.addCourse(courseCode, marksNum);
             courseCodeInput.value = '';
             document.getElementById('courseMarksInput').value = '';
@@ -375,7 +375,7 @@ class UIManager {
 
     addCourseToTable(course) {
         const tbody = document.getElementById('coursesTableBody');
-        
+
         // Remove empty row if exists
         const emptyRow = tbody.querySelector('.empty-row');
         if (emptyRow) emptyRow.remove();
@@ -514,13 +514,13 @@ class UIManager {
 
     clearAllCourses() {
         this.stateManager.setState({ courses: [] });
-        
+
         const tbody = document.getElementById('coursesTableBody');
         tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
-        
+
         // Hide the Clear All button
         document.getElementById('clearAllBtn').style.display = 'none';
-        
+
         this.updateAllMetrics();
     }
 
@@ -675,7 +675,7 @@ class UIManager {
         const step1 = document.getElementById('semesterStep1');
         const step2 = document.getElementById('semesterStep2');
         const semYear = document.getElementById('semYear');
-        
+
         document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -699,7 +699,7 @@ class UIManager {
         document.getElementById('btnStartFresh')?.addEventListener('click', () => {
             if (confirm("This will clear your current table. Are you sure?")) {
                 this.clearAllCourses();
-                
+
                 // Close Modal
                 modal.classList.add('opacity-0');
                 setTimeout(() => modal.classList.add('hidden'), 300);
@@ -710,15 +710,15 @@ class UIManager {
             const semNum = document.getElementById('semNumber').value;
             const semTerm = document.getElementById('semTerm').value;
             const year = document.getElementById('semYear').value;
-            
+
             if (!year) return this.showError("Please enter a year");
 
             const state = this.stateManager.getState();
             state.semesters = state.semesters || {};
-            
+
             const semKey = `S${semNum}-${semTerm}-${year}`;
             let coursesToSave = [];
-            
+
             if (this.semesterMode === 'save_current') {
                 coursesToSave = [...(state.courses || [])];
                 this.clearAllCourses(); // Clear current table UI and state
@@ -748,7 +748,7 @@ class UIManager {
             };
 
             this.stateManager.setState({ semesters: state.semesters });
-            
+
             // Close Modal & Go to View
             modal.classList.add('opacity-0');
             setTimeout(() => {
@@ -763,11 +763,11 @@ class UIManager {
         document.getElementById('btnCloseDetails')?.addEventListener('click', () => {
             document.getElementById('semesterDetailsView').classList.add('hidden');
         });
-        
+
         document.getElementById('btnDeleteSemester')?.addEventListener('click', () => {
-            if(!this.currentlyViewedSemesterId) return;
+            if (!this.currentlyViewedSemesterId) return;
             const state = this.stateManager.getState();
-            if(confirm('Are you sure you want to delete this semester?')) {
+            if (confirm('Are you sure you want to delete this semester?')) {
                 delete state.semesters[this.currentlyViewedSemesterId];
                 this.stateManager.setState({ semesters: state.semesters });
                 document.getElementById('semesterDetailsView').classList.add('hidden');
@@ -828,16 +828,16 @@ class UIManager {
     renderSemestersList() {
         const state = this.stateManager.getState();
         const semesters = state.semesters || {};
-        
+
         const miniList = document.getElementById('miniSemestersList');
         const grid = document.getElementById('semestersGrid');
-        
+
         if (!miniList || !grid) return;
-        
+
         let sItems = Object.values(semesters)
             .filter(sem => sem && sem.id && sem.term && sem.year)
             .sort((a, b) => b.timestamp - a.timestamp);
-        
+
         if (sItems.length === 0) {
             miniList.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full opacity-50">
@@ -890,7 +890,7 @@ class UIManager {
         this.navigateTo('semesters');
         this.currentlyViewedSemesterId = id;
         const sem = this.stateManager.getState().semesters[id];
-        if(!sem) return;
+        if (!sem) return;
 
         document.getElementById('semesterDetailsView').classList.remove('hidden');
         document.getElementById('detailSemTitle').textContent = `${sem.term} ${sem.year} (Semester ${sem.number})`;
@@ -898,7 +898,7 @@ class UIManager {
         document.getElementById('detailSemCredits').textContent = sem.credits;
 
         const tbody = document.getElementById('detailSemCourses');
-        if(!sem.courses || sem.courses.length === 0) {
+        if (!sem.courses || sem.courses.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
             return;
         }
@@ -918,7 +918,7 @@ class UIManager {
                 </tr>
             `;
         }).join('');
-        
+
         // Scroll into view gently
         document.getElementById('semesterDetailsView').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -996,7 +996,7 @@ class UIManager {
     initChart() {
         const ctx = document.getElementById('gradeDistributionChart');
         if (!ctx) return;
-        
+
         // Ensure Chart.js is loaded
         if (typeof Chart === 'undefined') {
             setTimeout(() => this.initChart(), 200);
@@ -1039,8 +1039,8 @@ class UIManager {
 
     updateGradeChart(courses) {
         if (!this.gradeChart) return;
-        
-        const gradeCounts = { 'A+':0, 'A':0, 'A-':0, 'B+':0, 'B':0, 'B-':0, 'C+':0, 'C':0, 'C-':0, 'F':0 };
+
+        const gradeCounts = { 'A+': 0, 'A': 0, 'A-': 0, 'B+': 0, 'B': 0, 'B-': 0, 'C+': 0, 'C': 0, 'C-': 0, 'F': 0 };
         let hasData = false;
 
         courses.forEach(c => {
@@ -1056,14 +1056,14 @@ class UIManager {
             msgEl?.classList.add('hidden');
             this.gradeChart.canvas.style.display = 'block';
             this.gradeChart.data.datasets[0].data = Object.values(gradeCounts);
-            
+
             // Adjust colors based on theme
             const isDark = document.documentElement.classList.contains('dark');
             this.gradeChart.options.scales.x.ticks.color = isDark ? '#c8c4d4' : '#474552';
             this.gradeChart.options.scales.y.ticks.color = isDark ? '#c8c4d4' : '#474552';
             this.gradeChart.options.scales.x.grid.color = isDark ? 'rgba(198, 192, 255, 0.1)' : 'rgba(200, 196, 212, 0.2)';
             this.gradeChart.options.scales.y.grid.color = isDark ? 'rgba(198, 192, 255, 0.1)' : 'rgba(200, 196, 212, 0.2)';
-            
+
             this.gradeChart.update();
         } else {
             msgEl?.classList.remove('hidden');
