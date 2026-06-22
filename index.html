@@ -1,296 +1,1389 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎓 ZabCal</title>
-    <link rel="stylesheet" href="style.css">
+    <title> ZabCal</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+
     <script>
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f9f9ff",
+                        "primary-container": "#27187e",
+                        "on-secondary-fixed": "#1a173a",
+                        "inverse-primary": "#c6c0ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#d5cffd",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#ededf5",
+                        "tertiary-fixed-dim": "#ffb598",
+                        "outline-variant": "#c8c4d4",
+                        "on-surface-variant": "#474552",
+                        "secondary-fixed-dim": "#c7c1ef",
+                        "on-surface": "#191b21",
+                        "surface-tint": "#5a51b2",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#531a00",
+                        "inverse-surface": "#2e3036",
+                        "surface-dim": "#d9d9e1",
+                        "background": "#f9f9ff",
+                        "primary": "#12005d",
+                        "secondary": "#5e5a81",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#787583",
+                        "on-secondary-fixed-variant": "#464268",
+                        "surface-container-low": "#f3f3fb",
+                        "secondary-fixed": "#e4dfff",
+                        "on-error": "#ffffff",
+                        "on-background": "#191b21",
+                        "tertiary": "#310c00",
+                        "primary-fixed-dim": "#c6c0ff",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-primary-fixed-variant": "#423899",
+                        "inverse-on-surface": "#f0f0f8",
+                        "surface-container-highest": "#e2e2ea",
+                        "surface-container-high": "#e7e7ef",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#9188ed",
+                        "primary-fixed": "#e4dfff",
+                        "surface-variant": "#e2e2ea",
+                        "on-secondary-container": "#5b577e",
+                        "surface": "#f9f9ff",
+                        "on-primary-fixed": "#150066",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#d57d59",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#763315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        :root {
+            --color-background: #f9f9ff;
+            --color-on-surface: #191b21;
+            --color-on-surface-variant: #474552;
+            --color-primary: #12005d;
+            --color-primary-container: #27187e;
+            --color-surface-container: #ededf5;
+            --color-surface-container-high: #e7e7ef;
+            --color-outline-variant: #c8c4d4;
+            --color-surface-bright: #f9f9ff;
+        }
+
+        html.dark {
+            --color-background: #0f0f1a;
+            --color-on-surface: #f0f0f8;
+            --color-on-surface-variant: #c8c4d4;
+            --color-primary: #c6c0ff;
+            --color-primary-container: #27187e;
+            --color-surface-container: #1e1e2e;
+            --color-surface-container-high: #28293d;
+            --color-outline-variant: #474552;
+            --color-surface-bright: #1a1b26;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        html,
+        body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .dark .glass-panel {
+            background: rgba(26, 27, 38, 0.7);
+            border-color: rgba(198, 192, 255, 0.1);
+        }
+
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #c8c4d4;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .autocomplete-suggestions.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f3fb;
+            transition: background-color 150ms ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.highlighted {
+            background-color: #f3f3fb;
+        }
+
+        .autocomplete-item-code {
+            font-weight: 600;
+            color: #12005d;
+            font-size: 0.875rem;
+        }
+
+        .autocomplete-item-name {
+            font-size: 0.75rem;
+            color: #474552;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #474552;
+            font-style: italic;
+            padding: 2rem !important;
+        }
+
+        /* Dark Mode Overrides */
+        .dark .autocomplete-suggestions {
+            background: #161621;
+            border-color: #474552;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark .autocomplete-item {
+            border-bottom-color: #1e1e2e;
+        }
+
+        .dark .autocomplete-item:hover,
+        .dark .autocomplete-item.highlighted {
+            background-color: #1e1e2e;
+        }
+
+        .dark .autocomplete-item-code {
+            color: #c6c0ff;
+        }
+
+        .dark .autocomplete-item-name {
+            color: #c8c4d4;
+        }
+
+        .dark .empty-row {
+            color: #c8c4d4;
+        }
+
+        /* Dark Mode Header */
+        .dark header {
+            background-color: rgba(15, 15, 26, 0.9) !important;
+            border-color: rgba(147, 143, 153, 0.2) !important;
+        }
+
+        /* Dark Mode Text Colors */
+        html.dark {
+            background-color: #0f0f1a !important;
+        }
+
+        html.dark body {
+            background-color: #0f0f1a !important;
+            color: #f0f0f8 !important;
+        }
+
+        html.dark main {
+            background-color: #0f0f1a !important;
+        }
+
+        html.dark h1,
+        html.dark h2,
+        html.dark h3,
+        html.dark h4,
+        html.dark h5,
+        html.dark h6 {
+            color: #f0f0f8 !important;
+        }
+
+        html.dark p,
+        html.dark span,
+        html.dark label {
+            color: #c8c4d4 !important;
+        }
+
+        /* Dark Mode Form Elements */
+        html.dark input,
+        html.dark select,
+        html.dark textarea {
+            background-color: #161621 !important;
+            color: #f0f0f8 !important;
+            border-color: #474552 !important;
+        }
+
+        html.dark input::placeholder,
+        html.dark select::placeholder,
+        html.dark textarea::placeholder {
+            color: #938f99 !important;
+        }
+
+        html.dark input:focus,
+        html.dark select:focus,
+        html.dark textarea:focus {
+            border-color: #c6c0ff !important;
+            box-shadow: 0 0 0 1px #c6c0ff !important;
+        }
+
+        /* Dark Mode Buttons */
+        html.dark button {
+            transition: all 0.3s ease;
+        }
+
+        /* Dark Mode Tables */
+        html.dark table {
+            background-color: #0f0f1a !important;
+            color: #f0f0f8 !important;
+        }
+
+        html.dark th {
+            background-color: #28293d !important;
+            color: #c6c0ff !important;
+            border-color: #474552 !important;
+        }
+
+        html.dark td {
+            border-color: #474552 !important;
+            color: #f0f0f8 !important;
+        }
+
+        html.dark tr:hover {
+            background-color: #1e1e2e !important;
+        }
+
+        /* Dark Mode Cards - Tailwind Color Classes */
+        html.dark .bg-background {
+            background-color: #0f0f1a !important;
+        }
+
+        html.dark .bg-primary-container {
+            background-color: #27187e !important;
+        }
+
+        html.dark .bg-surface-container {
+            background-color: #1e1e2e !important;
+        }
+
+        html.dark .bg-surface-container-high {
+            background-color: #28293d !important;
+        }
+
+        html.dark .bg-surface-container-low {
+            background-color: #161621 !important;
+        }
+
+        html.dark .bg-surface-container-lowest {
+            background-color: #0a0a0f !important;
+        }
+
+        html.dark .text-primary {
+            color: #c6c0ff !important;
+        }
+
+        html.dark .text-on-surface {
+            color: #f0f0f8 !important;
+        }
+
+        html.dark .text-on-surface-variant {
+            color: #c8c4d4 !important;
+        }
+
+        html.dark .text-on-primary-container {
+            color: #e4dfff !important;
+        }
+
+        html.dark .border-primary {
+            border-color: #c6c0ff !important;
+        }
+
+        html.dark .border-outline-variant {
+            border-color: #474552 !important;
+        }
+
+        /* Dark Mode Links */
+        html.dark a {
+            color: #c6c0ff !important;
+        }
+
+        html.dark a:hover {
+            color: #e4dfff !important;
+        }
+
+        /* Dark Mode Semester Summary */
+        html.dark #semesterSummary {
+            background-color: #1e1e2e !important;
+        }
+
+        html.dark #semesterSummary .bg-surface-container-highest {
+            background-color: #28293d !important;
+        }
+
+        html.dark #semesterSummary .text-on-surface-variant {
+            color: #c8c4d4 !important;
+        }
+
+        html.dark #semesterSummary #semesterTotalCredits,
+        html.dark #semesterSummary #semesterGradePoints,
+        html.dark #semesterSummary #semesterGPA {
+            color: #c6c0ff !important;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .anim-fade-up {
+            animation: fadeSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-fade-up-d1 {
+            animation: fadeSlideUp 0.45s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-fade-up-d2 {
+            animation: fadeSlideUp 0.45s 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-fade-up-d3 {
+            animation: fadeSlideUp 0.45s 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-scale-in {
+            animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .view-entering {
+            opacity: 0;
+            transform: translateY(12px) scale(0.99);
+        }
+
+        .view-entering-active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .ui-button,
+        .ui-card-link {
+            transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+            will-change: transform;
+        }
+
+        .ui-button:hover,
+        .ui-card-link:hover {
+            transform: translateY(-2px);
+        }
+
+        .ui-button:active,
+        .ui-card-link:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        #toastContainer {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-error {
+            background: rgba(186, 26, 26, 0.92);
+            color: #fff;
+        }
+
+        .toast-success {
+            background: rgba(39, 24, 126, 0.92);
+            color: #fff;
+        }
+
+        .toast-info {
+            background: rgba(71, 69, 82, 0.92);
+            color: #fff;
+        }
+
+        /* ===== BUTTON ANIMATIONS ===== */
+        button,
+        a[role="button"] {
+            transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+                background-color 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease,
+                opacity 0.2s ease;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.96) !important;
+        }
+
+        button:focus-visible {
+            outline: 2px solid #c6c0ff;
+            outline-offset: 2px;
+        }
+
+        /* ===== CARD HOVER ===== */
+        .stat-card {
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px -8px rgba(39, 24, 126, 0.18);
+        }
+
+        /* ===== TABLE ROW ANIMATIONS ===== */
+        #coursesTableBody tr {
+            animation: fadeSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* ===== SMOOTH SCROLL ===== */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* ===== MAIN VIEW TRANSITIONS ===== */
+        #calculatorView,
+        #semestersView {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        /* ===== MODAL ANIMATION ===== */
+        #addSemesterModal {
+            transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        #addSemesterModalContent {
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+        }
+
+        #addSemesterModal:not(.opacity-0) #addSemesterModalContent {
+            transform: scale(1) !important;
+            opacity: 1;
+        }
+
+        /* ===== MOBILE IMPROVEMENTS ===== */
+        @media (max-width: 768px) {
+            main {
+                padding: 1rem !important;
+            }
+
+            #calculatorView {
+                overflow-x: hidden;
+            }
+
+            .hero-title {
+                font-size: 2.5rem !important;
+            }
+
+            #toastContainer {
+                left: 1rem;
+                right: 1rem;
+            }
+
+            .toast {
+                font-size: 0.75rem;
+                padding: 0.6rem 1rem;
+            }
+
+            /* Better table on mobile */
+            #coursesTableBody td,
+            #coursesTableBody th {
+                padding: 0.5rem 0.35rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            .marks-input {
+                width: 55px !important;
+                font-size: 0.7rem !important;
+            }
+
+            .delete-btn {
+                font-size: 0.65rem !important;
+                padding: 0.3rem 0.5rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2rem !important;
+            }
+
+            .stat-card {
+                padding: 1rem !important;
+            }
+
+            .stat-card .text-4xl {
+                font-size: 1.75rem !important;
+            }
+
+            .stat-card .text-2xl {
+                font-size: 1.25rem !important;
+            }
+        }
+
+        .safe-bottom {
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        }
+    </style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-left">
-                    <h1>🎓 ZabCal</h1>
-                    <p class="tagline">Track your academic performance</p>
+
+<body class="bg-surface text-on-surface min-h-screen transition-colors duration-300">
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- TopAppBar -->
+    <header class="w-full top-0 sticky z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/30">
+        <div class="flex justify-between items-center px-4 sm:px-8 py-3 sm:py-4 max-w-7xl mx-auto">
+            <div class="flex items-center gap-4">
+                <span class="text-xl font-black text-primary font-['Inter'] tracking-tight">
+                    <span class="flex items-center gap-2">
+                        <span class="material-symbols-outlined -rotate-12"
+                            style='font-variation-settings: "FILL" 1, "wght" 700;'>school</span>
+                        Zabcal
+                    </span>
+                </span>
+            </div>
+            <nav class="hidden md:flex items-center space-x-2">
+                <a class="flex items-center space-x-2 px-4 py-2.5 bg-primary/10 text-primary font-bold rounded-lg transition-all ui-button"
+                    data-nav-view="calculator" href="#calculator" onclick="window.uiManager.navigateTo('calculator'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">calculate</span>
+                    <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">Calculator</span>
+                </a>
+                <a class="flex items-center space-x-2 px-4 py-2.5 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-lg transition-all ui-button"
+                    data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">About</span>
+                </a>
+            </nav>
+            <div class="flex items-center space-x-4">
+                <button id="themeToggle"
+                    class="p-2 hover:bg-surface-container-low rounded-lg transition-all hover:scale-105"
+                    title="Toggle Dark/Light Mode">
+                    <svg class="icon-sun w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg class="icon-moon w-5 h-5 text-primary" style="display:none" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen" id="calculatorView">
+            <div class="max-w-5xl mx-auto">
+                <!-- Hero Header -->
+                <div
+                    class="mb-8 sm:mb-12 flex flex-col md:flex-row justify-between items-start gap-6 sm:gap-8 anim-fade-up">
+                    <div class="max-w-xl min-w-0">
+                        <h1
+                            class="hero-title text-4xl sm:text-5xl md:text-6xl font-black text-primary tracking-tighter leading-none mb-4 sm:mb-6">
+                            CGPA <br />Calculator.</h1>
+                        <p class="text-on-surface-variant text-base sm:text-lg max-w-sm leading-relaxed">Calculate Your
+                            CGPA/SGPA With Zabcal</p>
+                    </div>
+                    <!-- Quick Stats Display -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full md:w-auto min-w-0 anim-fade-up-d1">
+                        <div
+                            class="stat-card p-4 sm:p-6 rounded-xl bg-primary-container text-on-primary flex flex-col items-center justify-center text-center">
+                            <span class="text-xs uppercase tracking-widest opacity-80 mb-1 font-bold">Cumulative
+                                GPA</span>
+                            <span class="text-4xl font-black" id="cgpaValue">0.00</span>
+                            <span class="text-[10px] mt-1 font-medium">CGPA</span>
+                        </div>
+                        <div
+                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
+                            <span class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Total
+                                Credits</span>
+                            <span class="text-4xl font-black text-primary" id="creditsValue">0</span>
+                            <span class="text-[10px] mt-1 font-medium text-on-surface-variant"
+                                id="creditsInfo">remaining</span>
+                        </div>
+                        <div
+                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Academic
+                                Standing</span>
+                            <span class="text-2xl font-black text-primary leading-tight"
+                                id="standingValue">Freshman</span>
+                            <span class="text-[10px] mt-1 font-medium text-on-surface-variant"
+                                id="standingInfo">Level</span>
+                        </div>
+                        <div
+                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Progress</span>
+                            <span class="text-2xl font-black text-primary" id="progressInfo">0%</span>
+                            <div class="w-12 h-1 bg-outline-variant/30 rounded-full mt-2 overflow-hidden">
+                                <div id="progressFill" class="h-full bg-primary transition-all duration-300"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="header-right">
-                    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
-                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
+
+                <!-- Calculator Body -->
+                <div class="flex flex-col gap-8">
+                    <!-- Input Controls -->
+                    <div class="w-full space-y-6 anim-fade-up-d2">
+                        <!-- Program Selection Card -->
+                        <div
+                            class="glass-panel rounded-xl p-5 sm:p-8 border border-primary/10 shadow-xl shadow-primary/5">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center pb-4 border-b border-outline-variant/10">
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-on-surface">Select
+                                        Program</h3>
+                                </div>
+                                <div class="mt-4 w-full md:w-2/3">
+                                    <label
+                                        class="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
+                                        for="programSelect">Academic Program</label>
+                                    <div class="relative">
+                                        <select
+                                            class="w-full bg-transparent border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-primary-container focus:border-primary-container transition-all text-sm font-medium text-on-surface appearance-none"
+                                            id="programSelect">
+                                            <option value="">-- Choose a program --</option>
+                                            <option value="BSCS">BS Computer Science</option>
+                                            <option value="BSAI">BS Artificial Intelligence</option>
+                                            <option value="BSSE">BS Software Engineering</option>
+                                            <option value="BBA">Bachelor of Business Administration</option>
+                                            <option value="BSAF">BS Accounting & Finance</option>
+                                            <option value="BSBA">BS Business Analytics</option>
+                                            <option value="BSMS">BS Media Sciences</option>
+                                        </select>
+                                        <div
+                                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+                                            <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Course Enrollment Card -->
+                        <div
+                            class="glass-panel rounded-xl p-5 sm:p-8 border border-primary/10 shadow-xl shadow-primary/5 anim-fade-up-d3">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center pb-4 border-b border-outline-variant/10">
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-on-surface">Course
+                                        Enrollment</h3>
+                                </div>
+                                <!-- Add Course Input Form -->
+                                <div class="flex flex-col md:flex-row items-start md:items-center gap-4 mt-4 min-w-0">
+                                    <div class="flex-grow w-full md:w-auto autocomplete-container">
+                                        <input
+                                            class="w-full bg-transparent border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-primary-container focus:border-primary-container transition-all text-sm font-medium text-on-surface"
+                                            placeholder="Enter course code or name" type="text" id="courseCodeInput"
+                                            autocomplete="off" />
+                                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+                                    </div>
+                                    <div class="w-full md:w-32">
+                                        <input
+                                            class="w-full bg-transparent border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-primary-container focus:border-primary-container transition-all text-sm font-medium text-on-surface"
+                                            max="100" min="0" placeholder="Marks (0-100)" type="number"
+                                            id="courseMarksInput" />
+                                    </div>
+                                    <button
+                                        class="w-full md:w-auto bg-[#27187E] text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-[#1f1366] hover:shadow-lg hover:shadow-primary/20 transition-all whitespace-nowrap shadow-sm"
+                                        id="addCourseBtn">
+                                        Add Course
+                                    </button>
+                                </div>
+                                <div class="flex justify-end mt-2">
+                                    <button
+                                        class="bg-[#ba1a1a] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#93000a] hover:shadow-lg transition-all shadow-sm hidden"
+                                        id="clearAllBtn">
+                                        Clear All Courses
+                                    </button>
+                                </div>
+
+                                <!-- Course Table -->
+                                <div class="mt-6 border border-outline-variant/20 rounded-xl overflow-hidden">
+                                    <div class="overflow-x-auto max-w-full overscroll-x-contain">
+                                        <table class="w-full min-w-[700px] text-left border-collapse whitespace-nowrap">
+                                            <thead class="bg-[#27187E] text-white text-xs uppercase tracking-wider">
+                                                <tr>
+                                                    <th class="px-4 py-3 font-semibold">Course Code</th>
+                                                    <th class="px-4 py-3 font-semibold">Course Name</th>
+                                                    <th class="px-4 py-3 font-semibold">Credits</th>
+                                                    <th class="px-4 py-3 font-semibold">Marks</th>
+                                                    <th class="px-4 py-3 font-semibold">Grade</th>
+                                                    <th class="px-4 py-3 font-semibold">GPA</th>
+                                                    <th class="px-4 py-3 font-semibold text-center">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody
+                                                class="text-sm font-medium text-on-surface divide-y divide-outline-variant/10"
+                                                id="coursesTableBody">
+                                                <tr class="empty-row">
+                                                    <td colspan="7" class="px-4 py-3">No courses added. Add a course to
+                                                        get started.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Semester Summary -->
+                    <div id="semesterSummary"
+                        class="bg-surface-container-low rounded-xl p-4 sm:p-6 hidden anim-scale-in">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4">Semester Summary
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                            <div class="p-4 bg-surface-container-highest rounded-lg">
+                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">Total Credits
+                                </p>
+                                <p class="text-2xl font-black text-primary" id="semesterTotalCredits">0</p>
+                            </div>
+                            <div class="p-4 bg-surface-container-highest rounded-lg">
+                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">Grade Points
+                                </p>
+                                <p class="text-2xl font-black text-primary" id="semesterGradePoints">0.00</p>
+                            </div>
+                            <div class="p-4 bg-surface-container-highest rounded-lg">
+                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">SGPA</p>
+                                <p class="text-2xl font-black text-primary" id="semesterGPA">0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Panels -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-surface-container-low rounded-xl p-6">
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4">Szabist
+                                Grading Plan</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr
+                                            class="text-[9px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20">
+                                            <th class="pb-2 font-bold">Marks</th>
+                                            <th class="pb-2 font-bold">Grade</th>
+                                            <th class="pb-2 font-bold text-right">GPA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-[11px] font-medium">
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">90–100</td>
+                                            <td class="py-2 font-bold text-primary">A+</td>
+                                            <td class="py-2 text-right">4.00</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">85–89</td>
+                                            <td class="py-2 font-bold text-primary">A</td>
+                                            <td class="py-2 text-right">3.75</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">80–84</td>
+                                            <td class="py-2 font-bold text-primary">A-</td>
+                                            <td class="py-2 text-right">3.50</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">75–79</td>
+                                            <td class="py-2 font-bold text-primary">B+</td>
+                                            <td class="py-2 text-right">3.25</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">70–74</td>
+                                            <td class="py-2 font-bold text-primary">B</td>
+                                            <td class="py-2 text-right">3.00</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">66–69</td>
+                                            <td class="py-2 font-bold text-primary">B-</td>
+                                            <td class="py-2 text-right">2.75</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">63–65</td>
+                                            <td class="py-2 font-bold text-primary">C+</td>
+                                            <td class="py-2 text-right">2.50</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">60–62</td>
+                                            <td class="py-2 font-bold text-primary">C</td>
+                                            <td class="py-2 text-right">2.00</td>
+                                        </tr>
+                                        <tr class="border-b border-outline-variant/10">
+                                            <td class="py-2">55–59</td>
+                                            <td class="py-2 font-bold text-primary">C-</td>
+                                            <td class="py-2 text-right">1.50</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2">0–54</td>
+                                            <td class="py-2 font-bold text-error">F</td>
+                                            <td class="py-2 text-right">0.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div
+                            class="flex flex-col bg-surface-container rounded-2xl p-6 border border-outline-variant/20 h-full min-h-[300px]">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Semester
+                                    Tracking</h4>
+                                <button id="viewAllSemestersBtn"
+                                    class="text-[9px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold hover:bg-primary/20 hover:shadow-sm transition-all uppercase tracking-wider">View
+                                    All</button>
+                            </div>
+
+                            <div id="miniSemestersList"
+                                class="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[250px] pr-2">
+                                <!-- Minified semester cards appended here by JS -->
+                                <div class="flex flex-col items-center justify-center h-full opacity-50">
+                                    <span class="material-symbols-outlined text-3xl mb-2">school</span>
+                                    <p class="text-xs text-center font-medium">No semesters added yet.</p>
+                                </div>
+                            </div>
+
+                            <button id="openAddSemesterModal"
+                                class="w-full mt-4 bg-transparent border-2 border-dashed border-outline-variant/40 text-on-surface-variant hover:text-primary hover:border-primary hover:bg-primary/5 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 group">
+                                <span
+                                    class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
+                                Add New Semester
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Analytics & Backup Panels -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                        <!-- Data Backup & Restore -->
+                        <div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h4
+                                    class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">save</span> Data Management
+                                </h4>
+                                <p class="text-sm font-medium text-on-surface-variant mb-6 leading-relaxed">
+                                    Backup your courses and tracked semesters to a file, or restore them. Your data
+                                    remains strictly on your device.
+                                </p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                <button id="btnExportData"
+                                    class="flex-1 bg-primary/10 text-primary py-3 rounded-xl font-bold hover:bg-primary/20 hover:shadow-md transition-all flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-[18px]">download</span> Export Backup
+                                </button>
+                                <input type="file" id="importDataInput" accept=".json" class="hidden">
+                                <button id="btnImportData"
+                                    class="flex-1 bg-transparent border-2 border-primary/20 text-primary py-3 rounded-xl font-bold hover:bg-primary/5 hover:border-primary/40 hover:shadow-md transition-all flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-[18px]">upload</span> Restore Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grade Distribution Chart -->
+                        <div
+                            class="bg-surface-container rounded-2xl p-6 border border-outline-variant/20 flex flex-col">
+                            <h4
+                                class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">bar_chart</span> Grade Distribution
+                            </h4>
+                            <div class="flex-1 relative w-full h-[200px] flex items-center justify-center">
+                                <canvas id="gradeDistributionChart"></canvas>
+                                <p id="noChartDataMsg"
+                                    class="absolute text-xs font-medium text-on-surface-variant hidden">Add some courses
+                                    to see distribution</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <footer
+                    class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
+                    <div class="mb-8 text-center">
+                        <p class="text-sm font-medium text-primary/80">
+                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                            All calculations run locally in your browser. No data is sent to any server.
+                        </p>
+                    </div>
+                </footer>
+            </div>
+        </main>
+
+        <!-- Semesters View -->
+        <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen hidden" id="semestersView">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex items-center gap-4 mb-8">
+                    <button id="btnBackToCalc"
+                        class="p-2 hover:bg-surface-container-low rounded-lg transition-all hover:scale-105 text-outline-variant hover:text-primary">
+                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+                    </button>
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Your Semesters</h2>
+                        <p class="text-sm font-medium text-on-surface-variant mt-1">Track and manage your academic
+                            history</p>
+                    </div>
+                </div>
+
+                <div id="semestersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Semesters rendered here -->
+                </div>
+
+                <!-- Semester Details View -->
+                <div id="semesterDetailsView"
+                    class="hidden mt-8 bg-surface-container rounded-3xl p-4 sm:p-8 border border-outline-variant/20 shadow-2xl">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h3 id="detailSemTitle" class="text-xl sm:text-2xl font-black text-on-surface">Fall 2025 (Semester 1)
+                            </h3>
+                            <div class="flex flex-wrap gap-3 sm:gap-4 mt-2">
+                                <span class="text-sm font-medium text-on-surface-variant">SGPA: <span id="detailSemGPA"
+                                        class="text-primary font-bold">0.00</span></span>
+                                <span class="text-sm font-medium text-on-surface-variant">Credits: <span
+                                        id="detailSemCredits" class="text-primary font-bold">0</span></span>
+                            </div>
+                        </div>
+                        <button id="btnCloseDetails"
+                            class="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20">
+                                    <th class="pb-3 font-bold">Course</th>
+                                    <th class="pb-3 font-bold text-center">Credits</th>
+                                    <th class="pb-3 font-bold text-center">Marks</th>
+                                    <th class="pb-3 font-bold text-right">Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailSemCourses" class="text-sm font-medium divide-y divide-outline-variant/10">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button id="btnDeleteSemester"
+                            class="bg-error/10 text-error px-4 py-2 rounded-lg font-bold hover:bg-error/20 transition-colors flex items-center gap-2 text-sm">
+                            <span class="material-symbols-outlined text-sm">delete</span> Delete Semester
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <footer
+                    class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
+                    <div class="mb-8 text-center">
+                        <p class="text-sm font-medium text-primary/80">
+                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                            All calculations run locally in your browser. No data is sent to any server.
+                        </p>
+                    </div>
+                </footer>
+            </div>
+        </main>
+
+        <!-- About View -->
+        <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen hidden" id="aboutView">
+            <div class="max-w-5xl mx-auto">
+                <div class="flex items-center gap-4 mb-6 sm:mb-8">
+                    <button onclick="window.uiManager.navigateTo('calculator')"
+                        class="ui-button p-2 hover:bg-surface-container-low rounded-lg text-outline-variant hover:text-primary hover:shadow-sm">
+                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+                    </button>
+                    <div>
+                        <p class="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] font-black text-primary mb-1">About</p>
+                        <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">About ZabCal</h2>
+                    </div>
+                </div>
+
+                <div id="aboutHeroCard" class="glass-panel rounded-[2rem] p-5 sm:p-8 md:p-10 border border-primary/10 shadow-xl shadow-primary/5 anim-fade-up overflow-hidden relative">
+                    <div class="absolute inset-x-0 top-0 h-40 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 lg:gap-8 items-start relative">
+                        <section class="space-y-6">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-primary-container rounded-3xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
+                                    <span class="material-symbols-outlined text-4xl sm:text-5xl">person</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-[0.3em] font-black text-primary mb-2">Built for SZABIST Students</p>
+                                    <h3 class="text-2xl sm:text-3xl font-black text-primary leading-tight">Hi, I’m Wasiq.</h3>
+                                    <p class="text-sm sm:text-base text-on-surface-variant mt-2 max-w-2xl leading-relaxed">
+                                        I built ZabCal because I wanted a fast, local-first CGPA and SGPA calculator that feels simple on mobile and clean on desktop.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
+                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Local First</p>
+                                    <p class="text-sm font-bold text-on-surface">Everything stays in your browser.</p>
+                                </div>
+                                <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
+                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Semester Tracking</p>
+                                    <p class="text-sm font-bold text-on-surface">Save SGPA history per term.</p>
+                                </div>
+                                <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
+                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Mobile Ready</p>
+                                    <p class="text-sm font-bold text-on-surface">Designed to work smoothly on small screens.</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-surface-container-low rounded-2xl p-5 sm:p-6 border border-outline-variant/20">
+                                <p class="text-xs font-black uppercase tracking-[0.25em] text-primary mb-3">Why this exists</p>
+                                <div class="space-y-4 text-sm sm:text-base text-on-surface-variant leading-relaxed">
+                                    <p>There wasn’t a dedicated tool that felt quick enough for everyday course entry, so ZabCal was built to keep calculations readable, accurate, and low-friction.</p>
+                                    <p>The goal is practical: help students check CGPA, SGPA, semester history, and progress without losing time to clutter or manual calculations.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <aside class="space-y-4">
+                            <div class="bg-surface-container rounded-3xl p-5 border border-outline-variant/20">
+                                <h4 class="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Quick Links</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <a href="https://github.com/Wasiq2006" target="_blank" rel="noopener noreferrer"
+                                        class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
+                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-bold text-on-surface">GitHub</p>
+                                            <p class="text-[11px] text-on-surface-variant">Source & contributions</p>
+                                        </div>
+                                    </a>
+                                    <a href="mailto:wasiqmansoor2006@gmail.com"
+                                        class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
+                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                <polyline points="22,6 12,13 2,6"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-bold text-on-surface">Email</p>
+                                            <p class="text-[11px] text-on-surface-variant">Questions or feedback</p>
+                                        </div>
+                                    </a>
+                                    <a href="https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a" target="_blank" rel="noopener noreferrer"
+                                        class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
+                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                                                <rect x="2" y="9" width="4" height="12"></rect>
+                                                <circle cx="4" cy="4" r="2"></circle>
+                                            </svg>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-bold text-on-surface">LinkedIn</p>
+                                            <p class="text-[11px] text-on-surface-variant">Professional contact</p>
+                                        </div>
+                                    </a>
+                                    <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                        class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
+                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="4 17 10 11 4 5"></polyline>
+                                                <line x1="12" y1="19" x2="20" y2="19"></line>
+                                            </svg>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-bold text-on-surface">Portfolio</p>
+                                            <p class="text-[11px] text-on-surface-variant">More about me</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="bg-primary-container text-white rounded-3xl p-5 sm:p-6 shadow-lg shadow-primary/20">
+                                <p class="text-[10px] uppercase tracking-[0.25em] font-black text-white/80 mb-3">Project Values</p>
+                                <div class="space-y-3 text-sm text-white/90 leading-relaxed">
+                                    <p><span class="font-bold text-white">Fast:</span> fewer clicks, cleaner navigation.</p>
+                                    <p><span class="font-bold text-white">Accurate:</span> grading rules and semester math stay aligned.</p>
+                                    <p><span class="font-bold text-white">Private:</span> your data stays local.</p>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <footer
+                    class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
+                    <div class="mb-8 text-center">
+                        <p class="text-sm font-medium text-primary/80">
+                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                            All calculations run locally in your browser. No data is sent to any server.
+                        </p>
+                    </div>
+                </footer>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-3 py-2 safe-bottom">
+            <div class="grid grid-cols-3 gap-2 max-w-md mx-auto">
+                <a class="flex flex-col items-center justify-center py-2 rounded-xl bg-primary/10 text-primary font-bold transition-all"
+                    data-nav-view="calculator" href="#calculator" onclick="window.uiManager.navigateTo('calculator'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">calculate</span>
+                    <span class="text-[10px] uppercase tracking-wider">Calculator</span>
+                </a>
+                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                    data-nav-view="semesters" href="#semesters" onclick="window.uiManager.navigateTo('semesters'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">school</span>
+                    <span class="text-[10px] uppercase tracking-wider">Semesters</span>
+                </a>
+                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                    data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span class="text-[10px] uppercase tracking-wider">About</span>
+                </a>
+            </div>
+        </nav>
+
+        <div id="addSemesterModal"
+            class="fixed inset-0 bg-[#0f0f1a]/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-surface-container rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
+                id="addSemesterModalContent">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-black text-on-surface">Add Semester</h3>
+                    <button id="btnCloseAddModal" class="text-outline-variant hover:text-error transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <!-- Step 1: Course Data Source -->
+                <div id="semesterStep1" class="flex flex-col gap-4">
+                    <p class="text-sm font-medium text-on-surface-variant leading-relaxed">How would you like to add
+                        courses for this semester?</p>
+
+                    <button id="btnSaveCurrent"
+                        class="w-full bg-primary-container text-white p-4 rounded-xl font-bold hover:bg-[#1f1366] transition-all focus:ring-2 focus:ring-primary shadow-lg flex flex-col items-center gap-2 group">
+                        <span
+                            class="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">download_done</span>
+                        <span>Use Current Table Courses</span>
+                        <span class="text-[10px] font-normal opacity-80">Saves current grades and clears table</span>
+                    </button>
+
+                    <button id="btnStartFresh"
+                        class="w-full bg-surface-container-high border-2 border-transparent text-on-surface p-4 rounded-xl font-bold hover:border-primary transition-all focus:ring-2 focus:ring-primary flex flex-col items-center gap-2 group">
+                        <span
+                            class="material-symbols-outlined text-3xl text-outline-variant group-hover:text-primary transition-colors">restart_alt</span>
+                        <span>Start Fresh</span>
+                        <span class="text-[10px] font-normal text-on-surface-variant">Reset table & add courses
+                            specifically</span>
+                    </button>
+                </div>
+
+                <!-- Step 2: Semester Details -->
+                <div id="semesterStep2" class="hidden flex-col gap-5">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Semester
+                            Number</label>
+                        <select id="semNumber"
+                            class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary appearance-none outline-none">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3">Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Term</label>
+                            <select id="semTerm"
+                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary appearance-none outline-none">
+                                <option value="Fall">Fall</option>
+                                <option value="Spring">Spring</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Year</label>
+                            <input type="number" id="semYear"
+                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary outline-none"
+                                placeholder="e.g. 2025">
+                        </div>
+                    </div>
+
+                    <button id="btnConfirmSem"
+                        class="w-full mt-2 bg-primary-container text-white py-3.5 rounded-xl font-black text-sm hover:bg-[#1f1366] transition-colors shadow-lg">
+                        Save & Continue
                     </button>
                 </div>
             </div>
-        </header>
+        </div>
 
-        <!-- Program Selector -->
-        <section class="section program-selector-section">
-            <div class="section-content">
-                <label for="programSelect" class="label">Select Your Program:</label>
-                <select id="programSelect" class="program-select">
-                    <option value="">-- Choose a program --</option>
-                    <option value="BSCS">BS Computer Science</option>
-                    <option value="BSAI">BS Artificial Intelligence</option>
-                    <option value="BSSE">BS Software Engineering</option>
-                    <option value="BBA">Bachelor of Business Administration</option>
-                    <option value="BSAF">BS Accounting & Finance</option>
-                    <option value="BSBA">BS Business Analytics</option>
-                    <option value="BSMS">BS Media Sciences</option>
-                </select>
-            </div>
-        </section>
-
-        <!-- Metrics Dashboard -->
-        <section class="section metrics-section">
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Current CGPA</div>
-                    <div class="metric-value" id="cgpaValue">0.00</div>
-                    <div class="metric-info">Out of 4.00</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-label">Total Credits</div>
-                    <div class="metric-value" id="creditsValue">0</div>
-                    <div class="metric-info" id="creditsInfo">0 remaining</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-label">Standing</div>
-                    <div class="metric-value" id="standingValue">-</div>
-                    <div class="metric-info" id="standingInfo">Complete courses to determine</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-label">Degree Progress</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                    </div>
-                    <div class="metric-info" id="progressInfo">0%</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- CGPA Calculator -->
-        <section class="section calculator-section">
-            <div class="section-header">
-                <h2>CGPA Calculator</h2>
-            </div>
-
-            <div class="calculator-controls">
-                <div class="input-group">
-                    <div class="autocomplete-wrapper">
-                        <input 
-                            type="text" 
-                            id="courseCodeInput" 
-                            class="input-field" 
-                            placeholder="Enter course code or name (e.g., CSC 1101)"
-                            maxlength="50"
-                            autocomplete="off"
-                        >
-                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
-                    </div>
-                    <input 
-                        type="number" 
-                        id="courseMarksInput" 
-                        class="input-field" 
-                        placeholder="Marks (0-100)"
-                        min="0"
-                        max="100"
-                        step="1"
-                    >
-                    <button class="btn-primary" id="addCourseBtn">Add Course</button>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-danger-secondary" id="clearAllBtn" style="display: none;">Clear All Courses</button>
-                </div>
-            </div>
-
-            <!-- Courses Table -->
-            <div class="courses-table-wrapper">
-                <table class="courses-table">
-                    <thead>
-                        <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Credits</th>
-                            <th>Marks</th>
-                            <th>Grade</th>
-                            <th>GPA</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="coursesTableBody">
-                        <tr class="empty-row">
-                            <td colspan="7">No courses added. Add a course to get started.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Semester Summary -->
-            <div class="semester-summary" id="semesterSummary" style="display: none;">
-                <div class="summary-row">
-                    <span class="summary-label">Total Credits:</span>
-                    <span class="summary-value" id="semesterTotalCredits">0</span>
-                </div>
-                <div class="summary-row">
-                    <span class="summary-label">Total Grade Points:</span>
-                    <span class="summary-value" id="semesterGradePoints">0.00</span>
-                </div>
-                <div class="summary-row semester-gpa">
-                    <span class="summary-label">Semester GPA (SGPA):</span>
-                    <span class="summary-value" id="semesterGPA">0.00</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Grading Scale Table -->
-        <section class="section grading-section">
-            <div class="section-header">
-                <h2>SZABIST Grading Scale</h2>
-            </div>
-            <div class="grading-table-wrapper">
-                <table class="grading-table">
-                    <thead>
-                        <tr>
-                            <th>Marks</th>
-                            <th>Grade</th>
-                            <th>GPA</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>90–100</td>
-                            <td><span class="grade-badge grade-a-plus">A+</span></td>
-                            <td class="gpa-value">4.00</td>
-                        </tr>
-                        <tr>
-                            <td>85–89</td>
-                            <td><span class="grade-badge grade-a">A</span></td>
-                            <td class="gpa-value">3.75</td>
-                        </tr>
-                        <tr>
-                            <td>80–84</td>
-                            <td><span class="grade-badge grade-a-minus">A−</span></td>
-                            <td class="gpa-value">3.50</td>
-                        </tr>
-                        <tr>
-                            <td>75–79</td>
-                            <td><span class="grade-badge grade-b-plus">B+</span></td>
-                            <td class="gpa-value">3.25</td>
-                        </tr>
-                        <tr>
-                            <td>70–74</td>
-                            <td><span class="grade-badge grade-b">B</span></td>
-                            <td class="gpa-value">3.00</td>
-                        </tr>
-                        <tr>
-                            <td>66–69</td>
-                            <td><span class="grade-badge grade-b-minus">B−</span></td>
-                            <td class="gpa-value">2.75</td>
-                        </tr>
-                        <tr>
-                            <td>63–65</td>
-                            <td><span class="grade-badge grade-c-plus">C+</span></td>
-                            <td class="gpa-value">2.50</td>
-                        </tr>
-                        <tr>
-                            <td>60–62</td>
-                            <td><span class="grade-badge grade-c">C</span></td>
-                            <td class="gpa-value">2.00</td>
-                        </tr>
-                        <tr>
-                            <td>55–59</td>
-                            <td><span class="grade-badge grade-c-minus">C−</span></td>
-                            <td class="gpa-value">1.50</td>
-                        </tr>
-                        <tr class="grade-fail">
-                            <td>0–54</td>
-                            <td><span class="grade-badge grade-f">F</span></td>
-                            <td class="gpa-value">0.00</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <!-- Contribute Section -->
-                <div class="contribute-card">
-                    <h3 class="contribute-title">Contribute / Suggestions</h3>
-                    <p class="contribute-subtitle">Have ideas to improve this tool? Found a bug? Want to add your program's curriculum?</p>
-                    
-                    <div class="contribute-buttons">
-                        <a href="https://github.com/Wasiq2006/ZabCal.git" target="_blank" rel="noopener noreferrer" class="btn-outline">
-                            Contribute on GitHub
-                        </a>
-                        <a href="mailto:wasiqmansoor2006@gmail.com?subject=SZABIST%20CGPA%20Calculator%20–%20Suggestions" class="btn-outline">
-                            Send Suggestions via Email
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Divider -->
-                <div class="footer-divider"></div>
-                
-                <!-- Creator Credit -->
-                <div class="footer-credit">
-                    Made by <span class="creator-name">Wasiq</span>
-                </div>
-                
-                <!-- Contact Icons -->
-                <div class="footer-icons">
-                    <a href="mailto:wasiqmansoor2006@gmail.com" class="footer-icon" aria-label="Send email" title="Email">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                        </svg>
-                    </a>
-                    
-                    <a href="https://github.com/Wasiq2006" target="_blank" rel="noopener noreferrer" class="footer-icon" aria-label="GitHub profile" title="GitHub">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                        </svg>
-                    </a>
-                    
-                    <a href="https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a" target="_blank" rel="noopener noreferrer" class="footer-icon" aria-label="LinkedIn profile" title="LinkedIn">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                            <rect x="2" y="9" width="4" height="12"></rect>
-                            <circle cx="4" cy="4" r="2"></circle>
-                        </svg>
-                    </a>
-                </div>
-                
-                <!-- Privacy Notice -->
-                <div class="footer-notice">
-                    All calculations run locally in your browser. No data is sent to any server.
-                </div>
-            </div>
-        </footer>
     </div>
 
-    <script src="database.js"></script>
-    <script src="script.js"></script>
+    <!-- JavaScript Files -->
+    <script src="database.js?v=4"></script>
+    <script src="script.js?v=8"></script>
 </body>
+
 </html>
