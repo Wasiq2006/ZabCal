@@ -67,6 +67,10 @@ class StateManager {
     }
 }
 
+function showVersionDetails() {
+    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+}
+
 // ============================================
 // CURRICULUM DATA HANDLER
 // ============================================
@@ -94,6 +98,10 @@ class CurriculumHandler {
     }
 }
 
+function showVersionDetails() {
+    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+}
+
 // ============================================
 // GRADING & CALCULATION ENGINE
 // ============================================
@@ -104,9 +112,13 @@ class GradingEngine {
     }
 
     calculateGrade(marks) {
-        if (marks < 0 || marks > 100) return null;
+        if (marks === null || marks < 0 || marks > 100) return null;
+        
+        // Round to nearest integer: .5 and above goes up (e.g., 65.5 -> 66)
+        const roundedMarks = Math.round(marks);
+        
         for (const threshold of this._thresholds) {
-            if (marks >= threshold) {
+            if (roundedMarks >= threshold) {
                 return GRADING_POLICY[threshold];
             }
         }
@@ -144,6 +156,10 @@ class GradingEngine {
         if (credits < 96) return 'Junior';
         return 'Senior';
     }
+}
+
+function showVersionDetails() {
+    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
 }
 
 // ============================================
@@ -428,7 +444,7 @@ class UIManager {
         if (marks === '') {
             course.marks = null;
         } else {
-            const marksNum = Math.round(parseFloat(marks));
+            const marksNum = parseFloat(marks);
             if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
                 this.showToast('Marks must be between 0 and 100', 'error');
                 return;
@@ -1070,6 +1086,10 @@ class UIManager {
             this.gradeChart.canvas.style.display = 'none';
         }
     }
+}
+
+function showVersionDetails() {
+    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
 }
 
 // ============================================

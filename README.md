@@ -2,7 +2,7 @@
 
 A modern, intuitive, and lightweight CGPA calculator designed specifically for SZABIST students. Track your academic performance with real-time GPA calculations, course management, and degree progress tracking.
 
-![CGPA Calculator](https://img.shields.io/badge/Version-1.0.0-blue)
+![CGPA Calculator](https://img.shields.io/badge/Version-2.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
@@ -33,7 +33,8 @@ The application comes pre-loaded with curricula for:
 
 - **🌙 Dark/Light Mode**: Toggle between themes with automatic system detection.
 - **🔍 Smart Autocomplete**: Search for courses by code (e.g., "CSC") or name.
-- **📱 Fully Responsive**: Optimized for desktop, tablet, and mobile devices via Tailwind CSS.
+- **📱 PWA (Progressive Web App)**: Install directly to your mobile home screen for an app-like experience.
+- **🎓 Custom Branding**: Featuring a specialized academic favicon.
 - **💾 Local Data Storage**: Uses Browser LocalStorage — your data never leaves your device.
 - **⚡ Instant Updates**: All metrics update immediately as marks are entered.
 
@@ -59,13 +60,13 @@ No installation required! This is a client-side application.
 | ------ | ----- | ---- |
 | 90–100 | A+    | 4.00 |
 | 85–89  | A     | 3.75 |
-| 80–84  | B+    | 3.50 |
-| 75–79  | B     | 3.25 |
-| 70–74  | B−    | 3.00 |
-| 66–69  | C+    | 2.75 |
-| 63–65  | C     | 2.50 |
-| 60–62  | C−    | 2.00 |
-| 55–59  | D     | 1.50 |
+| 80–84  | A-    | 3.50 |
+| 75–79  | B+    | 3.25 |
+| 70–74  | B     | 3.00 |
+| 66–69  | B-    | 2.75 |
+| 63–65  | C+    | 2.50 |
+| 60–62  | C     | 2.00 |
+| 55–59  | C-    | 1.50 |
 | 0–54   | F     | 0.00 |
 
 ---
@@ -94,6 +95,7 @@ ZabCal/
 ├── index.html    # UI structure and Tailwind configurations
 ├── script.js     # Application logic (State, Grading, and UI Management)
 ├── database.js  # Comprehensive SZABIST curriculum data
+├── manifest.json # PWA configuration for mobile installation
 └── README.md      # Project documentation
 ```
 
@@ -130,7 +132,7 @@ Update the `GRADING_POLICY` constant in `script.js` to adjust grade boundaries o
 
 Contributions are welcome! 
 1. **Bugs**: Report issues via [GitHub Issues](https://github.com/Wasiq2006).
-2. **Features**: Submit a Pull Request or suggest improvements via email.
+2. **Features**: Submit a Pull Request or suggest la improvements via email.
 3. **Data**: Help expand the `database.js` with updated course lists.
 
 ---
@@ -147,7 +149,7 @@ Contributions are welcome!
 ## 📜 License
 This project is licensed under the **MIT License**.
 
-**Last Updated**: June 2026  
+**Last Updated**: July 2026  
 **Status**: ✅ Active and Maintained
 
 _ZabCal - Simplifying Academic Excellence_ 🎓
