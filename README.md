@@ -1,4 +1,4 @@
-# 🎓 ZabCal - SZABIST CGPA Calculator
+# ZabCal - SZABIST CGPA Calculator
 
 A modern, intuitive, and lightweight CGPA calculator designed specifically for SZABIST students. Track your academic performance with real-time GPA calculations, course management, and degree progress tracking.
 
@@ -8,15 +8,15 @@ A modern, intuitive, and lightweight CGPA calculator designed specifically for S
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 
-- **📊 Real-time CGPA Calculation**: Automatically calculate your cumulative GPA as you add courses.
-- **📚 Course Management**: Add, remove, and manage multiple courses with ease.
-- **🎯 Clear All Courses**: Remove all courses at once with a single click (with confirmation).
-- **📈 Progress Tracking**: Visual degree progress bar showing your completion percentage.
-- **🔢 Academic Standing**: Automatic classification based on credits and CGPA.
+- **Real-time CGPA Calculation**: Automatically calculate your cumulative GPA as you add courses.
+- **Course Management**: Add, remove, and manage multiple courses with ease.
+- **Clear All Courses**: Remove all courses at once with a single click (with confirmation).
+- **Progress Tracking**: Visual degree progress bar showing your completion percentage.
+- **Academic Standing**: Automatic classification based on credits and CGPA.
 
 ### Program Support
 
@@ -31,16 +31,16 @@ The application comes pre-loaded with curricula for:
 
 ### User Experience
 
-- **🌙 Dark/Light Mode**: Toggle between themes with automatic system detection.
-- **🔍 Smart Autocomplete**: Search for courses by code (e.g., "CSC") or name.
-- **📱 PWA (Progressive Web App)**: Install directly to your mobile home screen for an app-like experience.
-- **🎓 Custom Branding**: Featuring a specialized academic favicon.
-- **💾 Local Data Storage**: Uses Browser LocalStorage — your data never leaves your device.
-- **⚡ Instant Updates**: All metrics update immediately as marks are entered.
+- **Dark/Light Mode**: Toggle between themes with automatic system detection.
+- **Smart Autocomplete**: Search for courses by code (e.g., "CSC") or name.
+- **PWA (Progressive Web App)**: Install directly to your mobile home screen for an app-like experience.
+- **Custom Branding**: Featuring a specialized academic favicon.
+- **Local Data Storage**: Uses Browser LocalStorage — your data never leaves your device.
+- **Instant Updates**: All metrics update immediately as marks are entered.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 No installation required! This is a client-side application.
@@ -54,7 +54,7 @@ No installation required! This is a client-side application.
 
 ---
 
-## 📋 SZABIST Grading Scale
+## SZABIST Grading Scale
 
 | Marks  | Grade | GPA  |
 | ------ | ----- | ---- |
@@ -71,7 +71,7 @@ No installation required! This is a client-side application.
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ### Technology Stack
 - **Frontend**: HTML5, CSS3 (Tailwind CSS), Vanilla JavaScript (ES6+).
@@ -88,7 +88,7 @@ The project follows an object-oriented approach to separate concerns:
 
 ---
 
-## 📁 File Structure
+## File Structure
 
 ```text
 ZabCal/
@@ -101,7 +101,7 @@ ZabCal/
 
 ---
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 - **100% Client-Side**: No backend, no API calls, no data transmission.
 - **Data Ownership**: Your academic records are stored only in your browser's local storage.
@@ -109,7 +109,7 @@ ZabCal/
 
 ---
 
-## 🛠️ Customization
+## Customization
 
 ### Adding New Programs
 To add a new degree program, modify the `CURRICULUM` object in `database.js`:
@@ -128,7 +128,7 @@ Update the `GRADING_POLICY` constant in `script.js` to adjust grade boundaries o
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! 
 1. **Bugs**: Report issues via [GitHub Issues](https://github.com/Wasiq2006).
@@ -137,7 +137,7 @@ Contributions are welcome!
 
 ---
 
-## 📞 Support & Feedback
+## Support & Feedback
 
 - **Creator**: Wasiq Mansoor
 - **GitHub**: [@Wasiq2006](https://github.com/Wasiq2006)
@@ -146,10 +146,10 @@ Contributions are welcome!
 
 ---
 
-## 📜 License
+## License
 This project is licensed under the **MIT License**.
 
 **Last Updated**: July 2026  
-**Status**: ✅ Active and Maintained
+**Status**: Active and Maintained
 
-_ZabCal - Simplifying Academic Excellence_ 🎓
+_ZabCal - Simplifying Academic Excellence_

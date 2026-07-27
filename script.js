@@ -68,8 +68,23 @@ class StateManager {
 }
 
 function showVersionDetails() {
-    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
 }
+
 
 // ============================================
 // CURRICULUM DATA HANDLER
@@ -99,8 +114,23 @@ class CurriculumHandler {
 }
 
 function showVersionDetails() {
-    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
 }
+
 
 // ============================================
 // GRADING & CALCULATION ENGINE
@@ -159,8 +189,23 @@ class GradingEngine {
 }
 
 function showVersionDetails() {
-    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
 }
+
 
 // ============================================
 // UI MANAGER
@@ -1089,8 +1134,23 @@ class UIManager {
 }
 
 function showVersionDetails() {
-    alert('Version 2.1 Changes:\\n\\n- Corrected rounding logic: Marks .5 and above now round up to the next grade.\\n- Added PWA support: Now installable as a Web App on mobile devices.\\n- Added custom Favicon: Graduation cap icon added to tabs and home screen.\\n- UI Improvements: Enhanced mobile layout and navigation.');
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
 }
+
 
 // ============================================
 // INITIALIZE APPLICATION

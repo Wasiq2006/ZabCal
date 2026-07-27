@@ -1395,6 +1395,38 @@
             </div>
         </div>
 
+        <!-- Version Details Modal -->
+        <div id="versionModal"
+            class="fixed inset-0 bg-[#0f0f1a]/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-surface-container rounded-3xl w-full max-w-md p-6 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
+                id="versionModalContent">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-black text-on-surface">Version 2.1 Changes</h3>
+                    <button id="btnCloseVersionModal" class="text-outline-variant hover:text-error transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="space-y-4 text-sm text-on-surface-variant leading-relaxed">
+                    <div class="flex gap-3">
+                        <span class="text-primary font-bold">Accuracy:</span>
+                        <p>Corrected rounding logic: Marks .5 and above now round up to the next grade.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="text-primary font-bold">PWA:</span>
+                        <p>Added PWA support: Now installable as a Web App on mobile devices.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="text-primary font-bold">Visuals:</span>
+                        <p>Added custom Favicon: Graduation cap icon added to tabs and home screen.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="text-primary font-bold">UI:</span>
+                        <p>UI Improvements: Enhanced mobile layout and navigation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- JavaScript Files -->
