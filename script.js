@@ -67,6 +67,25 @@ class StateManager {
     }
 }
 
+function showVersionDetails() {
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
+}
+
+
 // ============================================
 // CURRICULUM DATA HANDLER
 // ============================================
@@ -94,6 +113,25 @@ class CurriculumHandler {
     }
 }
 
+function showVersionDetails() {
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
+}
+
+
 // ============================================
 // GRADING & CALCULATION ENGINE
 // ============================================
@@ -104,9 +142,13 @@ class GradingEngine {
     }
 
     calculateGrade(marks) {
-        if (marks < 0 || marks > 100) return null;
+        if (marks === null || marks < 0 || marks > 100) return null;
+        
+        // Round to nearest integer: .5 and above goes up (e.g., 65.5 -> 66)
+        const roundedMarks = Math.round(marks);
+        
         for (const threshold of this._thresholds) {
-            if (marks >= threshold) {
+            if (roundedMarks >= threshold) {
                 return GRADING_POLICY[threshold];
             }
         }
@@ -145,6 +187,25 @@ class GradingEngine {
         return 'Senior';
     }
 }
+
+function showVersionDetails() {
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
+}
+
 
 // ============================================
 // UI MANAGER
@@ -428,7 +489,7 @@ class UIManager {
         if (marks === '') {
             course.marks = null;
         } else {
-            const marksNum = Math.round(parseFloat(marks));
+            const marksNum = parseFloat(marks);
             if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
                 this.showToast('Marks must be between 0 and 100', 'error');
                 return;
@@ -1071,6 +1132,25 @@ class UIManager {
         }
     }
 }
+
+function showVersionDetails() {
+    const modal = document.getElementById('versionModal');
+    const content = document.getElementById('versionModalContent');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+
+    document.getElementById('btnCloseVersionModal').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        content.classList.add('scale-95');
+        content.classList.remove('scale-100');
+    };
+}
+
 
 // ============================================
 // INITIALIZE APPLICATION

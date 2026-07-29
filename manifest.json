@@ -1,0 +1,16 @@
+{
+  "name": "ZabCal",
+  "short_name": "ZabCal",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f9f9ff",
+  "theme_color": "#12005d",
+  "description": "Zabist CGPA Calculator",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,22 +1,22 @@
-# 🎓 ZabCal - SZABIST CGPA Calculator
+# ZabCal - SZABIST CGPA Calculator
 
 A modern, intuitive, and lightweight CGPA calculator designed specifically for SZABIST students. Track your academic performance with real-time GPA calculations, course management, and degree progress tracking.
 
-![CGPA Calculator](https://img.shields.io/badge/Version-1.0.0-blue)
+![CGPA Calculator](https://img.shields.io/badge/Version-2.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 
-- **📊 Real-time CGPA Calculation**: Automatically calculate your cumulative GPA as you add courses.
-- **📚 Course Management**: Add, remove, and manage multiple courses with ease.
-- **🎯 Clear All Courses**: Remove all courses at once with a single click (with confirmation).
-- **📈 Progress Tracking**: Visual degree progress bar showing your completion percentage.
-- **🔢 Academic Standing**: Automatic classification based on credits and CGPA.
+- **Real-time CGPA Calculation**: Automatically calculate your cumulative GPA as you add courses.
+- **Course Management**: Add, remove, and manage multiple courses with ease.
+- **Clear All Courses**: Remove all courses at once with a single click (with confirmation).
+- **Progress Tracking**: Visual degree progress bar showing your completion percentage.
+- **Academic Standing**: Automatic classification based on credits and CGPA.
 
 ### Program Support
 
@@ -31,15 +31,16 @@ The application comes pre-loaded with curricula for:
 
 ### User Experience
 
-- **🌙 Dark/Light Mode**: Toggle between themes with automatic system detection.
-- **🔍 Smart Autocomplete**: Search for courses by code (e.g., "CSC") or name.
-- **📱 Fully Responsive**: Optimized for desktop, tablet, and mobile devices via Tailwind CSS.
-- **💾 Local Data Storage**: Uses Browser LocalStorage — your data never leaves your device.
-- **⚡ Instant Updates**: All metrics update immediately as marks are entered.
+- **Dark/Light Mode**: Toggle between themes with automatic system detection.
+- **Smart Autocomplete**: Search for courses by code (e.g., "CSC") or name.
+- **PWA (Progressive Web App)**: Install directly to your mobile home screen for an app-like experience.
+- **Custom Branding**: Featuring a specialized academic favicon.
+- **Local Data Storage**: Uses Browser LocalStorage — your data never leaves your device.
+- **Instant Updates**: All metrics update immediately as marks are entered.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 No installation required! This is a client-side application.
@@ -53,24 +54,24 @@ No installation required! This is a client-side application.
 
 ---
 
-## 📋 SZABIST Grading Scale
+## SZABIST Grading Scale
 
 | Marks  | Grade | GPA  |
 | ------ | ----- | ---- |
 | 90–100 | A+    | 4.00 |
 | 85–89  | A     | 3.75 |
-| 80–84  | B+    | 3.50 |
-| 75–79  | B     | 3.25 |
-| 70–74  | B−    | 3.00 |
-| 66–69  | C+    | 2.75 |
-| 63–65  | C     | 2.50 |
-| 60–62  | C−    | 2.00 |
-| 55–59  | D     | 1.50 |
+| 80–84  | A-    | 3.50 |
+| 75–79  | B+    | 3.25 |
+| 70–74  | B     | 3.00 |
+| 66–69  | B-    | 2.75 |
+| 63–65  | C+    | 2.50 |
+| 60–62  | C     | 2.00 |
+| 55–59  | C-    | 1.50 |
 | 0–54   | F     | 0.00 |
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ### Technology Stack
 - **Frontend**: HTML5, CSS3 (Tailwind CSS), Vanilla JavaScript (ES6+).
@@ -87,19 +88,20 @@ The project follows an object-oriented approach to separate concerns:
 
 ---
 
-## 📁 File Structure
+## File Structure
 
 ```text
 ZabCal/
 ├── index.html    # UI structure and Tailwind configurations
 ├── script.js     # Application logic (State, Grading, and UI Management)
 ├── database.js  # Comprehensive SZABIST curriculum data
+├── manifest.json # PWA configuration for mobile installation
 └── README.md      # Project documentation
 ```
 
 ---
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 - **100% Client-Side**: No backend, no API calls, no data transmission.
 - **Data Ownership**: Your academic records are stored only in your browser's local storage.
@@ -107,7 +109,7 @@ ZabCal/
 
 ---
 
-## 🛠️ Customization
+## Customization
 
 ### Adding New Programs
 To add a new degree program, modify the `CURRICULUM` object in `database.js`:
@@ -126,16 +128,16 @@ Update the `GRADING_POLICY` constant in `script.js` to adjust grade boundaries o
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! 
 1. **Bugs**: Report issues via [GitHub Issues](https://github.com/Wasiq2006).
-2. **Features**: Submit a Pull Request or suggest improvements via email.
+2. **Features**: Submit a Pull Request or suggest la improvements via email.
 3. **Data**: Help expand the `database.js` with updated course lists.
 
 ---
 
-## 📞 Support & Feedback
+## Support & Feedback
 
 - **Creator**: Wasiq Mansoor
 - **GitHub**: [@Wasiq2006](https://github.com/Wasiq2006)
@@ -144,10 +146,10 @@ Contributions are welcome!
 
 ---
 
-## 📜 License
+## License
 This project is licensed under the **MIT License**.
 
-**Last Updated**: June 2026  
-**Status**: ✅ Active and Maintained
+**Last Updated**: July 2026  
+**Status**: Active and Maintained
 
-_ZabCal - Simplifying Academic Excellence_ 🎓
+_ZabCal - Simplifying Academic Excellence_
