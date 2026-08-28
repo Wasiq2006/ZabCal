@@ -336,13 +336,14 @@
     }
 
     _runTimeline() {
+      const holdTime = typeof this.opts.holdMs === 'number' ? this.opts.holdMs : 2200;
       const T = {
         dropStart: 0,      // tokens start dropping/bouncing in (staggered internally)
         absorbStart: 1500, // tokens converge into center + fade
         logoIn: 1550,      // logo bounces into place
         titleIn: 2450,     // serif wordmark bounces up
         subtitleIn: 2800,  // subtitle fades in
-        doneAt: 3400
+        doneAt: 2800 + holdTime // hold at the end before completing
       };
 
       this._after(T.dropStart, () => this.floatersG.classList.add('drop'));
