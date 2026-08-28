@@ -228,6 +228,7 @@ class UIManager {
         if (!this._isInitialized) {
             this.initChart();
             this.setupTheme();
+            this.initIntroAnimation();
             this.setupEventListeners();
             this.setupSemesterListeners();
             this.setupDataManagementListeners();
@@ -235,6 +236,49 @@ class UIManager {
         }
         this.restoreState();
         this.updateAllMetrics();
+    }
+
+    initIntroAnimation() {
+        const introContainer = document.getElementById('zabcal-intro');
+        const overlay = document.getElementById('introOverlay');
+
+        if (!introContainer || typeof ZabCalIntro === 'undefined') {
+            if (overlay) overlay.style.display = 'none';
+            return;
+        }
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const anim = new ZabCalIntro(introContainer, {
+            loop: false,
+            background: 'transparent',
+            ink: isDark ? '#c6c0ff' : '#12005d',
+            subtitleColor: isDark ? '#c8c4d4' : '#474552',
+            title: 'ZabCal',
+            subtitle: 'SZABIST CGPA Calculator',
+            onComplete: () => {
+                this.dismissIntroOverlay();
+            }
+        });
+
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                this.dismissIntroOverlay();
+            }, { once: true });
+        }
+
+        anim.play();
+    }
+
+    dismissIntroOverlay() {
+        const overlay = document.getElementById('introOverlay');
+        if (overlay && !overlay.classList.contains('dismissed')) {
+            overlay.classList.add('dismissed');
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 500);
+        }
     }
 
     setupTheme() {

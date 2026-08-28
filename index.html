@@ -670,6 +670,11 @@
 </head>
 
 <body class="bg-surface text-on-surface min-h-screen transition-colors duration-300">
+    <!-- Intro / Loading Screen Overlay -->
+    <div id="introOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-background transition-opacity duration-500 cursor-pointer">
+        <div id="zabcal-intro" class="w-full h-full"></div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toastContainer"></div>
 
@@ -1401,12 +1406,16 @@
             <div class="bg-surface-container rounded-3xl w-full max-w-md p-6 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
                 id="versionModalContent">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-black text-on-surface">Version 2.1 Changes</h3>
+                    <h3 class="text-2xl font-black text-on-surface">Version 2.2 Changes</h3>
                     <button id="btnCloseVersionModal" class="text-outline-variant hover:text-error transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 <div class="space-y-4 text-sm text-on-surface-variant leading-relaxed">
+                    <div class="flex gap-3">
+                        <span class="text-primary font-bold">Animation:</span>
+                        <p>Added custom vector logo splash & intro loading animation on app startup.</p>
+                    </div>
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Accuracy:</span>
                         <p>Corrected rounding logic: Marks .5 and above now round up to the next grade.</p>
@@ -1430,6 +1439,7 @@
     </div>
 
     <!-- JavaScript Files -->
+    <script src="Animation.js?v=1"></script>
     <script src="database.js?v=4"></script>
     <script src="script.js?v=8"></script>
 </body>

@@ -25,6 +25,7 @@
 - `index.html` $\rightarrow$ UI structure and theme definitions.
 - `script.js` $\rightarrow$ Application logic, grading engine, and UI orchestration.
 - `database.js` $\rightarrow$ SZABIST curriculum source of truth.
+- `Animation.js` $\rightarrow$ Page loading and intro reveal animation engine.
 - `manifest.json` $\rightarrow$ PWA configuration.
 
 ## Conventions
