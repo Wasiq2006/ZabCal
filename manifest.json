@@ -1,11 +1,11 @@
 {
-  "name": "ZabCal",
+  "name": "ZabCal - SZABIST CGPA & GPA Calculator",
   "short_name": "ZabCal",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f9f9ff",
   "theme_color": "#12005d",
-  "description": "Zabist CGPA Calculator",
+  "description": "ZabCal is the official modern SZABIST CGPA & GPA Calculator. Calculate SGPA, cumulative CGPA, track repeating courses, and manage semesters.",
   "icons": [
     {
       "src": "favicon.png",

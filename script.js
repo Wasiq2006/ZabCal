@@ -221,6 +221,9 @@ class UIManager {
         this.semesterMode = '';
         this._activeView = 'calculator';
         this._isInitialized = false;
+        this.selectedDepartment = 'ALL';
+        this.isEditingSemester = false;
+        this.tempEditedCourses = [];
         this.initializeUI();
     }
 
@@ -250,6 +253,7 @@ class UIManager {
         const isDark = document.documentElement.classList.contains('dark');
         const anim = new ZabCalIntro(introContainer, {
             loop: false,
+            holdMs: 2200,
             background: 'transparent',
             ink: isDark ? '#c6c0ff' : '#12005d',
             subtitleColor: isDark ? '#c8c4d4' : '#474552',
@@ -317,46 +321,91 @@ class UIManager {
         if (moon) moon.style.display = isDark ? 'block' : 'none';
     }
 
-    setupEventListeners() {
-        // Program selection
-        document.getElementById('programSelect').addEventListener('change', (e) => {
-            this.stateManager.setState({ program: e.target.value });
-            this.updateAllMetrics();
-        });
+    updateProgramUI(progKey) {
+        const programSelect = document.getElementById('programSelect');
+        if (programSelect) programSelect.value = progKey || '';
+    }
 
-        // Course input with autocomplete
+    setupEventListeners() {
+        const programSelect = document.getElementById('programSelect');
         const courseCodeInput = document.getElementById('courseCodeInput');
         const autocompleteSuggestions = document.getElementById('autocompleteSuggestions');
         let highlightedIndex = -1;
         let currentSuggestions = [];
 
-        courseCodeInput.addEventListener('input', () => {
-            clearTimeout(this._autocompleteTimeout);
-            this._autocompleteTimeout = setTimeout(() => {
-                const input = courseCodeInput.value.trim().toUpperCase();
-                if (input.length === 0) {
-                    autocompleteSuggestions.classList.remove('show');
-                    currentSuggestions = [];
-                    return;
+        programSelect?.addEventListener('change', (e) => {
+            const newProg = e.target.value;
+            this.stateManager.setState({ program: newProg });
+            this.updateProgramUI(newProg);
+            this.updateAllMetrics();
+            if (courseCodeInput) {
+                filterSuggestionsByProgram();
+            }
+        });
+
+        const filterSuggestionsByProgram = () => {
+            const input = courseCodeInput.value.trim().toUpperCase();
+            const currentProg = this.stateManager.getState().program || '';
+            const allCourses = this.curriculumHandler.getAllCourseCodes();
+            const inputLower = input.toLowerCase();
+
+            let filteredCourses = allCourses;
+            if (currentProg) {
+                filteredCourses = allCourses.filter(code => {
+                    const info = this.curriculumHandler.getCourseInfo(code);
+                    return info && info.programs && info.programs.includes(currentProg);
+                });
+            }
+
+            let matching = [];
+            if (input.length === 0) {
+                if (currentProg) {
+                    matching = filteredCourses.slice(0, 8);
                 }
-                const allCourses = this.curriculumHandler.getAllCourseCodes();
-                const inputLower = input.toLowerCase();
-                const matching = allCourses
+            } else {
+                matching = filteredCourses
                     .filter(code => {
                         const courseInfo = this.curriculumHandler.getCourseInfo(code);
                         if (!courseInfo) return false;
+                        const keywordMatch = courseInfo.keywords &&
+                            courseInfo.keywords.some(k => k.toLowerCase().includes(inputLower));
                         return code.toLowerCase().includes(inputLower) ||
-                            courseInfo.name.toLowerCase().includes(inputLower);
+                            courseInfo.name.toLowerCase().includes(inputLower) ||
+                            keywordMatch;
+                    })
+                    .sort((a, b) => {
+                        const aInfo = this.curriculumHandler.getCourseInfo(a);
+                        const bInfo = this.curriculumHandler.getCourseInfo(b);
+                        const aKw = aInfo?.keywords?.some(k => k.toLowerCase() === inputLower);
+                        const bKw = bInfo?.keywords?.some(k => k.toLowerCase() === inputLower);
+                        if (aKw && !bKw) return -1;
+                        if (!aKw && bKw) return 1;
+                        return 0;
                     })
                     .slice(0, 8);
-                if (matching.length === 0) {
-                    autocompleteSuggestions.classList.remove('show');
-                    currentSuggestions = [];
-                    return;
-                }
-                currentSuggestions = matching;
-                highlightedIndex = -1;
-                this.renderAutocompleteSuggestions(matching);
+            }
+
+            if (matching.length === 0) {
+                autocompleteSuggestions.classList.remove('show');
+                currentSuggestions = [];
+                return;
+            }
+            currentSuggestions = matching;
+            highlightedIndex = -1;
+            this.renderAutocompleteSuggestions(matching);
+        };
+
+        courseCodeInput.addEventListener('focus', () => {
+            const currentProg = this.stateManager.getState().program || '';
+            if (currentProg && courseCodeInput.value.trim().length === 0) {
+                filterSuggestionsByProgram();
+            }
+        });
+
+        courseCodeInput.addEventListener('input', () => {
+            clearTimeout(this._autocompleteTimeout);
+            this._autocompleteTimeout = setTimeout(() => {
+                filterSuggestionsByProgram();
             }, 80);
         });
 
@@ -427,11 +476,7 @@ class UIManager {
         tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
         document.getElementById('clearAllBtn').style.display = 'none';
 
-        if (state.program) {
-            document.getElementById('programSelect').value = state.program;
-        } else {
-            document.getElementById('programSelect').value = '';
-        }
+        this.updateProgramUI(state.program || '');
 
         if (state.courses && state.courses.length > 0) {
             state.courses.forEach((course) => {
@@ -443,7 +488,7 @@ class UIManager {
     }
 
     addCourse(courseCode, marks = null) {
-        const code = courseCode.trim().toUpperCase();
+        let code = courseCode.trim().toUpperCase();
 
         // Validation
         if (!code) {
@@ -456,6 +501,9 @@ class UIManager {
             this.showError(`Course code "${code}" not found in curriculum`);
             return;
         }
+
+        // Use canonical course code in case a keyword/alias was entered
+        code = courseInfo.code;
 
         const state = this.stateManager.getState();
         if (state.courses.find(c => c.code === code)) {
@@ -478,6 +526,29 @@ class UIManager {
         this.updateAllMetrics();
     }
 
+    isCourseInSavedSemesters(courseCode) {
+        const state = this.stateManager.getState();
+        const clean = (courseCode || '').trim().toUpperCase();
+        if (!state.semesters) return false;
+        return Object.values(state.semesters).some(sem =>
+            sem.courses && sem.courses.some(c => c.code.trim().toUpperCase() === clean)
+        );
+    }
+
+    isCourseRepeatedAcrossSemesters(courseCode) {
+        const state = this.stateManager.getState();
+        const clean = (courseCode || '').trim().toUpperCase();
+        let count = 0;
+        if (state.semesters) {
+            Object.values(state.semesters).forEach(sem => {
+                if (sem.courses && sem.courses.some(c => c.code.trim().toUpperCase() === clean)) {
+                    count++;
+                }
+            });
+        }
+        return count >= 2;
+    }
+
     addCourseToTable(course) {
         const tbody = document.getElementById('coursesTableBody');
 
@@ -490,9 +561,13 @@ class UIManager {
 
         const row = document.createElement('tr');
         const courseIndex = this.stateManager.getState().courses.findIndex(c => c.code === course.code);
+        const isRepeated = this.isCourseInSavedSemesters(course.code);
 
         row.innerHTML = `
-            <td>${course.code}</td>
+            <td>
+                <div class="font-bold text-on-surface">${course.code}</div>
+                ${isRepeated ? `<div class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 mt-1"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</div>` : ''}
+            </td>
             <td>${course.name}</td>
             <td>${course.credits}</td>
             <td>
@@ -643,14 +718,42 @@ class UIManager {
             });
         }
 
+        // Apply SZABIST Repeating Course Policy (Highest grade attempt counted in CGPA, credits counted once)
+        const grouped = {};
+        allCompletedCourses.forEach(course => {
+            const key = course.code.trim().toUpperCase();
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(course);
+        });
+
+        let effectiveCoursesForCGPA = [];
+        let totalCredits = 0;
+
+        Object.values(grouped).forEach(attempts => {
+            if (attempts.length === 1) {
+                effectiveCoursesForCGPA.push(attempts[0]);
+                totalCredits += attempts[0].credits;
+            } else {
+                // Pick the highest grade/marks attempt
+                attempts.sort((a, b) => {
+                    const aGrade = a.marks !== null ? this.gradingEngine.calculateGrade(a.marks) : { gpa: 0 };
+                    const bGrade = b.marks !== null ? this.gradingEngine.calculateGrade(b.marks) : { gpa: 0 };
+                    if (bGrade.gpa !== aGrade.gpa) return bGrade.gpa - aGrade.gpa;
+                    return (b.marks || 0) - (a.marks || 0);
+                });
+                const best = attempts[0];
+                effectiveCoursesForCGPA.push(best);
+                totalCredits += best.credits; // Credit counted only once towards degree
+            }
+        });
+
         // Calculate metrics
         const completedCoursesForSummary = courses.filter(c => c.marks !== null);
-        const totalCredits = allCompletedCourses.reduce((sum, c) => sum + c.credits, 0);
         const totalRemainingCredits = state.program
             ? this.curriculumHandler.getProgramTotalCredits(state.program) - totalCredits
             : 0;
 
-        const cgpa = this.gradingEngine.calculateCGPA(allCompletedCourses);
+        const cgpa = this.gradingEngine.calculateCGPA(effectiveCoursesForCGPA);
         const standing = this.gradingEngine.getStanding(totalCredits, cgpa);
         const programTotal = state.program ? this.curriculumHandler.getProgramTotalCredits(state.program) : 132;
         const progress = programTotal > 0 ? (totalCredits / programTotal) * 100 : 0;
@@ -670,6 +773,28 @@ class UIManager {
         // Update Progress card
         document.getElementById('progressFill').style.width = `${Math.min(100, progress)}%`;
         document.getElementById('progressInfo').textContent = `${Math.round(progress)}%`;
+
+        // Update Total Courses Completed on Progress card (unique completed courses from saved semesters)
+        let savedSemesterCoursesCount = 0;
+        if (state.semesters) {
+            const uniqueCodes = new Set();
+            Object.values(state.semesters).forEach(sem => {
+                if (sem.courses) {
+                    sem.courses.filter(c => c.marks !== null).forEach(c => uniqueCodes.add(c.code.trim().toUpperCase()));
+                }
+            });
+            savedSemesterCoursesCount = uniqueCodes.size;
+        }
+
+        const totalCompletedEl = document.getElementById('totalCoursesCompleted');
+        const coursesCompletedContainer = document.getElementById('coursesCompletedContainer');
+        if (totalCompletedEl) {
+            totalCompletedEl.textContent = savedSemesterCoursesCount;
+
+            if (coursesCompletedContainer) {
+                coursesCompletedContainer.title = "This only updates when you save a semester in the Semesters section.";
+            }
+        }
 
         if (this.renderSemestersList) this.renderSemestersList();
 
@@ -717,10 +842,16 @@ class UIManager {
         const container = document.getElementById('autocompleteSuggestions');
         container.innerHTML = suggestions.map((code, index) => {
             const courseInfo = this.curriculumHandler.getCourseInfo(code);
+            const kwBadge = courseInfo.keywords && courseInfo.keywords.length > 0
+                ? `<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0 ml-auto">${courseInfo.keywords[0]}</span>`
+                : '';
             return `
-                <div class="autocomplete-item ${index === 0 ? 'highlighted' : ''}" data-index="${index}" data-code="${code}">
-                    <span class="autocomplete-item-code">${code}</span>
-                    <span class="autocomplete-item-name">${courseInfo.name}</span>
+                <div class="autocomplete-item ${index === 0 ? 'highlighted' : ''} flex items-center justify-between gap-2" data-index="${index}" data-code="${code}">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="autocomplete-item-code shrink-0">${code}</span>
+                        <span class="autocomplete-item-name truncate">${courseInfo.name}</span>
+                    </div>
+                    ${kwBadge}
                 </div>
             `;
         }).join('');
@@ -780,6 +911,31 @@ class UIManager {
         const step1 = document.getElementById('semesterStep1');
         const step2 = document.getElementById('semesterStep2');
         const semYear = document.getElementById('semYear');
+        const semTermSelect = document.getElementById('semTerm');
+        const semNumSelect = document.getElementById('semNumber');
+
+        const updateSummerSemesterState = () => {
+            if (!semTermSelect || !semNumSelect) return;
+            if (semTermSelect.value === 'Summer') {
+                semNumSelect.value = 'Summer';
+                semNumSelect.disabled = true;
+                semNumSelect.classList.add('opacity-60', 'cursor-not-allowed', 'bg-surface-container-high/40');
+            } else {
+                semNumSelect.disabled = false;
+                semNumSelect.classList.remove('opacity-60', 'cursor-not-allowed', 'bg-surface-container-high/40');
+                if (semNumSelect.value === 'Summer') {
+                    semNumSelect.value = '1';
+                }
+            }
+        };
+
+        semTermSelect?.addEventListener('change', updateSummerSemesterState);
+        semNumSelect?.addEventListener('change', () => {
+            if (semNumSelect.value === 'Summer') {
+                semTermSelect.value = 'Summer';
+                updateSummerSemesterState();
+            }
+        });
 
         document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
             modal.classList.remove('hidden');
@@ -799,6 +955,24 @@ class UIManager {
             step1.classList.add('hidden');
             step2.classList.remove('hidden');
             step2.classList.add('flex');
+
+            updateSummerSemesterState();
+
+            // Detect and display repeated courses notice
+            const state = this.stateManager.getState();
+            const noticeBox = document.getElementById('semRepeatedCoursesNotice');
+            const noticeList = document.getElementById('semRepeatedCoursesList');
+            if (noticeBox && noticeList) {
+                const repeatedCourses = (state.courses || []).filter(c => this.isCourseInSavedSemesters(c.code));
+                if (repeatedCourses.length > 0) {
+                    noticeList.innerHTML = repeatedCourses.map(c => `
+                        <li><span class="font-bold text-on-surface">${c.code}</span> (${c.name}): <span class="font-bold text-amber-600 dark:text-amber-400">Repeating Course</span></li>
+                    `).join('');
+                    noticeBox.classList.remove('hidden');
+                } else {
+                    noticeBox.classList.add('hidden');
+                }
+            }
         });
 
         document.getElementById('btnStartFresh')?.addEventListener('click', () => {
@@ -812,8 +986,10 @@ class UIManager {
         });
 
         document.getElementById('btnConfirmSem')?.addEventListener('click', () => {
-            const semNum = document.getElementById('semNumber').value;
-            const semTerm = document.getElementById('semTerm').value;
+            const semTerm = semTermSelect ? semTermSelect.value : 'Fall';
+            const rawSemNum = semNumSelect ? semNumSelect.value : '1';
+            const isSummer = semTerm === 'Summer' || rawSemNum === 'Summer';
+            const semNum = isSummer ? 'Summer' : rawSemNum;
             const year = document.getElementById('semYear').value;
 
             if (!year) return this.showError("Please enter a year");
@@ -821,11 +997,14 @@ class UIManager {
             const state = this.stateManager.getState();
             state.semesters = state.semesters || {};
 
-            const semKey = `S${semNum}-${semTerm}-${year}`;
+            const semKey = isSummer ? `Summer-${year}-${Date.now().toString().slice(-4)}` : `S${semNum}-${semTerm}-${year}`;
             let coursesToSave = [];
 
             if (this.semesterMode === 'save_current') {
-                coursesToSave = [...(state.courses || [])];
+                coursesToSave = (state.courses || []).map(c => ({
+                    ...c,
+                    isRepeated: this.isCourseInSavedSemesters(c.code)
+                }));
                 this.clearAllCourses(); // Clear current table UI and state
             } else {
                 this.showError('Please select "Use Current Table Courses" to save a semester.');
@@ -844,7 +1023,7 @@ class UIManager {
             state.semesters[semKey] = {
                 id: semKey,
                 number: semNum,
-                term: semTerm,
+                term: isSummer ? 'Summer' : semTerm,
                 year: year,
                 courses: coursesToSave,
                 sgpa: sgpa,
@@ -865,8 +1044,61 @@ class UIManager {
 
         document.getElementById('viewAllSemestersBtn')?.addEventListener('click', () => this.navigateTo('semesters'));
         document.getElementById('btnBackToCalc')?.addEventListener('click', () => this.navigateTo('calculator'));
+
         document.getElementById('btnCloseDetails')?.addEventListener('click', () => {
+            this.isEditingSemester = false;
+            this.tempEditedCourses = [];
             document.getElementById('semesterDetailsView').classList.add('hidden');
+        });
+
+        document.getElementById('btnEditSemMarks')?.addEventListener('click', () => {
+            if (!this.currentlyViewedSemesterId) return;
+            const sem = this.stateManager.getState().semesters[this.currentlyViewedSemesterId];
+            if (!sem || !sem.courses || sem.courses.length === 0) return;
+            this.tempEditedCourses = JSON.parse(JSON.stringify(sem.courses));
+            this.openSemDetails(this.currentlyViewedSemesterId, true);
+        });
+
+        document.getElementById('btnCancelEditMarks')?.addEventListener('click', () => {
+            if (!this.currentlyViewedSemesterId) return;
+            this.tempEditedCourses = [];
+            this.openSemDetails(this.currentlyViewedSemesterId, false);
+        });
+
+        document.getElementById('btnSaveEditMarks')?.addEventListener('click', () => {
+            if (!this.currentlyViewedSemesterId) return;
+            const state = this.stateManager.getState();
+            const sem = state.semesters[this.currentlyViewedSemesterId];
+            if (!sem) return;
+
+            // Validate tempEditedCourses marks
+            for (const c of this.tempEditedCourses) {
+                if (c.marks !== null && (isNaN(c.marks) || c.marks < 0 || c.marks > 100)) {
+                    this.showError(`Invalid marks for ${c.code}. Must be between 0 and 100.`);
+                    return;
+                }
+            }
+
+            sem.courses = this.tempEditedCourses;
+            const completed = sem.courses.filter(c => c.marks !== null);
+            sem.sgpa = this.gradingEngine.calculateSGPA(completed);
+            sem.credits = completed.reduce((s, c) => s + c.credits, 0);
+
+            this.stateManager.setState({ semesters: state.semesters });
+            this.tempEditedCourses = [];
+            this.openSemDetails(this.currentlyViewedSemesterId, false);
+            this.updateAllMetrics();
+
+            // Refresh grade chart
+            let all = (state.courses || []).filter(c => c.marks !== null);
+            if (state.semesters) {
+                Object.values(state.semesters).forEach(s => {
+                    if (s.courses) all = all.concat(s.courses.filter(c => c.marks !== null));
+                });
+            }
+            this.updateGradeChart(all);
+
+            this.showSuccess("Semester marks updated and SGPA recalculated!");
         });
 
         document.getElementById('btnDeleteSemester')?.addEventListener('click', () => {
@@ -957,75 +1189,214 @@ class UIManager {
             return;
         }
 
-        miniList.innerHTML = sItems.map(sem => `
+        miniList.innerHTML = sItems.map(sem => {
+            const isSummer = sem.number === 'Summer' || sem.term === 'Summer';
+            const semBadge = isSummer ? 'Summer Semester' : `Sem ${sem.number}`;
+            const semTitle = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year}`;
+            return `
             <div class="bg-surface-container-high p-3 rounded-xl border border-outline-variant/30 cursor-pointer hover:border-primary transition-colors flex justify-between items-center" onclick="window.uiManager.openSemDetails('${sem.id}')">
                 <div>
-                    <h5 class="text-xs font-bold text-on-surface">${sem.term} ${sem.year}</h5>
-                    <p class="text-[9px] text-on-surface-variant font-medium">Sem ${sem.number} • ${sem.credits} Cr</p>
+                    <h5 class="text-xs font-bold text-on-surface">${semTitle}</h5>
+                    <p class="text-[9px] text-on-surface-variant font-medium">${semBadge} • ${sem.credits} Cr • ${sem.courses ? sem.courses.length : 0} Courses</p>
                 </div>
                 <div class="text-right">
                     <p class="text-xs font-black text-primary">${sem.sgpa.toFixed(2)}</p>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
-        grid.innerHTML = sItems.map(sem => `
-            <div class="bg-surface-container rounded-3xl p-6 border border-outline-variant/30 hover:border-primary/50 transition-all hover:shadow-[0_10px_40px_-10px_rgba(39,24,126,0.2)] cursor-pointer group" onclick="window.uiManager.openSemDetails('${sem.id}')">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <span class="text-[10px] font-black uppercase text-primary tracking-widest bg-primary/10 px-3 py-1 rounded-full">Semester ${sem.number}</span>
-                    </div>
+        grid.innerHTML = sItems.map(sem => {
+            const isSummer = sem.number === 'Summer' || sem.term === 'Summer';
+            const semBadge = isSummer ? 'Summer Semester' : `Semester ${sem.number}`;
+            const semTitle = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year}`;
+            return `
+            <div class="bg-surface-container rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-outline-variant/30 hover:border-primary/50 transition-all hover:shadow-[0_10px_40px_-10px_rgba(39,24,126,0.2)] cursor-pointer group" onclick="window.uiManager.openSemDetails('${sem.id}')">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black uppercase text-primary tracking-widest bg-primary/10 px-3 py-1 rounded-full">${semBadge}</span>
+                    <span class="text-[10px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full">${sem.courses ? sem.courses.length : 0} Courses</span>
                 </div>
-                <h3 class="text-xl font-black text-on-surface mb-6 group-hover:text-primary transition-colors">${sem.term} ${sem.year}</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-surface-container-high rounded-xl p-4 border border-outline-variant/20">
+                <h3 class="text-xl font-black text-on-surface mb-4 group-hover:text-primary transition-colors">${semTitle}</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-surface-container-high rounded-xl p-3 sm:p-4 border border-outline-variant/20">
                         <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">SGPA</p>
                         <p class="text-2xl font-black text-primary">${sem.sgpa.toFixed(2)}</p>
                     </div>
-                    <div class="bg-surface-container-high rounded-xl p-4 border border-outline-variant/20">
+                    <div class="bg-surface-container-high rounded-xl p-3 sm:p-4 border border-outline-variant/20">
                         <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">Credits</p>
                         <p class="text-2xl font-black text-on-surface">${sem.credits}</p>
                     </div>
                 </div>
+                <div class="mt-4 pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors">
+                    <span>View course details</span>
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
-    openSemDetails(id) {
+    openSemDetails(id, isEditMode = false) {
         this.navigateTo('semesters');
         this.currentlyViewedSemesterId = id;
+        this.isEditingSemester = isEditMode;
         const sem = this.stateManager.getState().semesters[id];
         if (!sem) return;
 
-        document.getElementById('semesterDetailsView').classList.remove('hidden');
-        document.getElementById('detailSemTitle').textContent = `${sem.term} ${sem.year} (Semester ${sem.number})`;
+        const detailsView = document.getElementById('semesterDetailsView');
+        detailsView.classList.remove('hidden');
+
+        const editActionBar = document.getElementById('semEditActionBar');
+        const btnEditMarks = document.getElementById('btnEditSemMarks');
+
+        if (isEditMode) {
+            editActionBar?.classList.remove('hidden');
+            btnEditMarks?.classList.add('hidden');
+        } else {
+            editActionBar?.classList.add('hidden');
+            btnEditMarks?.classList.remove('hidden');
+        }
+
+        const isSummer = sem.number === 'Summer' || sem.term === 'Summer';
+        const semTitleDisplay = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year} (Semester ${sem.number})`;
+        document.getElementById('detailSemTitle').textContent = semTitleDisplay;
         document.getElementById('detailSemGPA').textContent = sem.sgpa.toFixed(2);
         document.getElementById('detailSemCredits').textContent = sem.credits;
 
+        const coursesToRender = isEditMode ? this.tempEditedCourses : sem.courses;
+        const countEl = document.getElementById('detailSemCoursesCount');
+        if (countEl) countEl.textContent = coursesToRender ? coursesToRender.length : 0;
+
         const tbody = document.getElementById('detailSemCourses');
-        if (!sem.courses || sem.courses.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
+        const mobileContainer = document.getElementById('detailSemCoursesMobile');
+
+        if (!coursesToRender || coursesToRender.length === 0) {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
+            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-sm text-on-surface-variant bg-surface-container-high/50 rounded-2xl border border-outline-variant/20">No courses found in this semester.</div>`;
             return;
         }
 
-        tbody.innerHTML = sem.courses.map(course => {
-            const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
-            const gradeStr = gradeObj ? gradeObj.grade : '-';
-            return `
-                <tr class="hover:bg-surface-container-high/50 transition-colors border-b border-outline-variant/10">
-                    <td class="py-3 pr-4">
-                        <div class="font-bold text-on-surface text-sm break-all max-w-[200px] truncate" title="${course.name}">${course.code}</div>
-                        <div class="text-[10px] text-on-surface-variant truncate max-w-[200px]" title="${course.name}">${course.name}</div>
-                    </td>
-                    <td class="py-3 text-center">${course.credits}</td>
-                    <td class="py-3 text-center">${course.marks !== null ? course.marks : '-'}</td>
-                    <td class="py-3 text-right font-black text-primary">${gradeStr}</td>
-                </tr>
-            `;
-        }).join('');
+        const updateLiveEdit = (index, val) => {
+            const num = val.trim() === '' ? null : parseFloat(val);
+            if (num !== null && (isNaN(num) || num < 0 || num > 100)) return;
+            this.tempEditedCourses[index].marks = num;
 
-        // Scroll into view gently
-        document.getElementById('semesterDetailsView').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const active = this.tempEditedCourses.filter(c => c.marks !== null);
+            const liveSGPA = this.gradingEngine.calculateSGPA(active);
+            document.getElementById('detailSemGPA').textContent = liveSGPA.toFixed(2);
+
+            const gradeObj = num !== null ? this.gradingEngine.calculateGrade(num) : null;
+            const gradeStr = gradeObj ? gradeObj.grade : '-';
+
+            // Update row desktop
+            const rowGradeEl = document.querySelector(`.sem-live-grade-${index}`);
+            if (rowGradeEl) rowGradeEl.textContent = gradeStr;
+
+            // Update card mobile
+            const cardGradeEl = document.querySelector(`.sem-live-card-grade-${index}`);
+            if (cardGradeEl) cardGradeEl.textContent = gradeStr;
+            const cardGpaEl = document.querySelector(`.sem-live-card-gpa-${index}`);
+            if (cardGpaEl) cardGpaEl.textContent = gradeObj ? `GPA ${gradeObj.gpa.toFixed(2)}` : '';
+        };
+
+        // Render Desktop Table (clean, no truncation, full names wrapping properly)
+        if (tbody) {
+            tbody.innerHTML = coursesToRender.map((course, idx) => {
+                const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
+                const gradeStr = gradeObj ? gradeObj.grade : '-';
+                const isRepeated = course.isRepeated || this.isCourseRepeatedAcrossSemesters(course.code);
+
+                const marksDisplay = isEditMode ? `
+                    <div class="flex items-center justify-center">
+                        <input type="number" min="0" max="100" 
+                            class="sem-edit-mark-input w-20 px-2 py-1 text-center font-bold bg-surface-container-high border border-outline-variant/40 rounded-lg text-on-surface focus:ring-2 focus:ring-primary outline-none transition-all text-sm" 
+                            value="${course.marks !== null ? course.marks : ''}" 
+                            data-index="${idx}">
+                    </div>
+                ` : `${course.marks !== null ? course.marks : '-'}`;
+
+                return `
+                    <tr class="hover:bg-surface-container-high/50 transition-colors border-b border-outline-variant/10">
+                        <td class="py-3.5 pr-4">
+                            <div class="font-bold text-on-surface text-sm flex flex-wrap items-center gap-2">
+                                <span>${course.code}</span>
+                                ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</span>` : ''}
+                            </div>
+                            <div class="text-xs text-on-surface-variant leading-snug break-words mt-0.5">${course.name}</div>
+                        </td>
+                        <td class="py-3.5 text-center font-medium text-on-surface">${course.credits}</td>
+                        <td class="py-3.5 text-center font-medium text-on-surface">${marksDisplay}</td>
+                        <td class="py-3.5 text-right font-black text-primary text-base sem-live-grade-${idx}">${gradeStr}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Render Mobile Cards (optimized for phone screens)
+        if (mobileContainer) {
+            mobileContainer.innerHTML = coursesToRender.map((course, idx) => {
+                const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
+                const gradeStr = gradeObj ? gradeObj.grade : '-';
+                const isRepeated = course.isRepeated || this.isCourseRepeatedAcrossSemesters(course.code);
+
+                const marksDisplay = isEditMode ? `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold text-on-surface-variant">Marks:</span>
+                        <input type="number" min="0" max="100" 
+                            class="sem-edit-mark-input w-20 px-2 py-1 text-center font-bold bg-surface-container border border-outline-variant/40 rounded-lg text-on-surface focus:ring-2 focus:ring-primary outline-none text-sm" 
+                            value="${course.marks !== null ? course.marks : ''}" 
+                            data-index="${idx}">
+                    </div>
+                ` : `
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm text-primary">grade</span>
+                        <span>Marks: <strong class="text-on-surface font-bold">${course.marks !== null ? course.marks : '-'}</strong></span>
+                    </div>
+                `;
+
+                return `
+                    <div class="p-3.5 bg-surface-container-high/70 rounded-2xl border border-outline-variant/20 flex flex-col gap-2.5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                    <span class="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">${course.code}</span>
+                                    ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[11px]">repeat</span> Repeating Course</span>` : ''}
+                                </div>
+                                <h5 class="font-bold text-on-surface text-sm leading-snug break-words">${course.name}</h5>
+                            </div>
+                            <div class="flex flex-col items-end shrink-0">
+                                <span class="px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-base sem-live-card-grade-${idx}">${gradeStr}</span>
+                                <span class="text-[10px] text-on-surface-variant font-medium mt-0.5 sem-live-card-gpa-${idx}">${gradeObj ? `GPA ${gradeObj.gpa.toFixed(2)}` : ''}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm text-primary">credit_card</span>
+                                <span>Credits: <strong class="text-on-surface font-bold">${course.credits}</strong></span>
+                            </div>
+                            ${marksDisplay}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        if (isEditMode) {
+            document.querySelectorAll('.sem-edit-mark-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.index, 10);
+                    updateLiveEdit(idx, e.target.value);
+                    document.querySelectorAll(`.sem-edit-mark-input[data-index="${idx}"]`).forEach(inp => {
+                        if (inp !== e.target) inp.value = e.target.value;
+                    });
+                });
+            });
+        }
+
+        // Scroll into view gently on mobile and desktop
+        if (!isEditMode) {
+            setTimeout(() => {
+                detailsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
     }
 
     setupDataManagementListeners() {
@@ -1140,6 +1511,16 @@ class UIManager {
                 }
             }
         });
+
+        // Initialize data immediately after chart creation
+        const state = this.stateManager.getState();
+        let all = (state.courses || []).filter(c => c.marks !== null);
+        if (state.semesters) {
+            Object.values(state.semesters).forEach(s => {
+                if (s.courses) all = all.concat(s.courses.filter(c => c.marks !== null));
+            });
+        }
+        this.updateGradeChart(all);
     }
 
     updateGradeChart(courses) {
@@ -1148,7 +1529,8 @@ class UIManager {
         const gradeCounts = { 'A+': 0, 'A': 0, 'A-': 0, 'B+': 0, 'B': 0, 'B-': 0, 'C+': 0, 'C': 0, 'C-': 0, 'F': 0 };
         let hasData = false;
 
-        courses.forEach(c => {
+        const validCourses = courses || [];
+        validCourses.forEach(c => {
             const gradeObj = this.gradingEngine.calculateGrade(c.marks);
             if (gradeObj && gradeCounts.hasOwnProperty(gradeObj.grade)) {
                 gradeCounts[gradeObj.grade]++;

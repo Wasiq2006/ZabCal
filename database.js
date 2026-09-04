@@ -51,8 +51,8 @@ const DATABASE = {
           { code: "CSC 1202", name: "Multivariate Calculus", credits: 3, type: "Core" },
           { code: "CSC 2102", name: "Data Structures and Algorithms", credits: 3, type: "Core" },
           { code: "CSCL 2102", name: "Lab: Data Structures and Algorithms", credits: 1, type: "Core" },
-          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core" },
-          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core" },
+          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core", keywords: ["COAL"] },
+          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core", keywords: ["COAL", "COAL Lab"] },
           { code: "CSC 3106", name: "HCI & Computer Graphics", credits: 2, type: "Core" },
           { code: "CSCL 3106", name: "Lab: HCI & Computer Graphics", credits: 1, type: "Core" },
           { code: "CSC 3215", name: "Understanding of Holy Quran-II (Muslim Students)", credits: 1, type: "Core" },
@@ -135,8 +135,8 @@ const DATABASE = {
           { code: "CSCL 2102", name: "Lab: Data Structures and Algorithms", credits: 1, type: "Core" },
           { code: "CSC 1201", name: "Discrete Mathematical Structures", credits: 3, type: "Core" },
           { code: "CSC 2206", name: "Linear Algebra", credits: 3, type: "Core" },
-          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core" },
-          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core" },
+          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core", keywords: ["COAL"] },
+          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core", keywords: ["COAL", "COAL Lab"] },
           { code: "CSC 3109", name: "Software Engineering", credits: 3, type: "Core" },
           { code: "CSC 3215", name: "Understanding of Holy Quran-II (Muslim Students)", credits: 1, type: "Core" },
           { code: "CSC xxxx", name: "Ethics and Morality (Non-Muslim Students)", credits: 2, type: "Core" },
@@ -506,8 +506,8 @@ const DATABASE = {
         3: [
           { code: "CSC 2102", name: "Data Structures and Algorithms", credits: 3, type: "Core" },
           { code: "CSCL 2102", name: "Lab: Data Structures and Algorithms", credits: 1, type: "Core" },
-          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core" },
-          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core" },
+          { code: "CSC 3105", name: "Computer Organization and Assembly Language", credits: 2, type: "Core", keywords: ["COAL"] },
+          { code: "CSCL 3105", name: "Lab: Computer Organization and Assembly Language", credits: 1, type: "Core", keywords: ["COAL", "COAL Lab"] },
           { code: "CSC 1201", name: "Discrete Mathematical Structures", credits: 3, type: "Core" },
           { code: "CSC 3206", name: "Artificial Intelligence", credits: 2, type: "Core" },
           { code: "CSCL 3206", name: "Lab: Artificial Intelligence", credits: 1, type: "Core" },
@@ -587,6 +587,11 @@ const DATABASE = {
   /**
    * Build a flat lookup for all courses
    */
+  // Course acronyms and keyword mappings
+  courseKeywords: {
+    "COAL": ["CSC 3105", "CSCL 3105"]
+  },
+
   buildCourseLookup() {
     if (this._courseLookupCache) return this._courseLookupCache;
     const lookup = {};
@@ -601,8 +606,15 @@ const DATABASE = {
               code: course.code,
               name: course.name,
               credits: course.credits,
+              keywords: course.keywords ? [...course.keywords] : [],
               programs: []
             };
+          } else if (course.keywords) {
+            course.keywords.forEach(k => {
+              if (!lookup[course.code].keywords.includes(k)) {
+                lookup[course.code].keywords.push(k);
+              }
+            });
           }
           if (!lookup[course.code].programs.includes(programKey)) {
             lookup[course.code].programs.push(programKey);
@@ -610,6 +622,20 @@ const DATABASE = {
         });
       });
     });
+
+    if (this.courseKeywords) {
+      Object.entries(this.courseKeywords).forEach(([kw, codes]) => {
+        codes.forEach(cCode => {
+          if (lookup[cCode]) {
+            if (!lookup[cCode].keywords) lookup[cCode].keywords = [];
+            if (!lookup[cCode].keywords.includes(kw)) {
+              lookup[cCode].keywords.push(kw);
+            }
+          }
+        });
+      });
+    }
+
     this._courseLookupCache = lookup;
     return lookup;
   },
@@ -627,7 +653,14 @@ const DATABASE = {
    */
   getCourseByCode(courseCode) {
     const lookup = this.buildCourseLookup();
-    return lookup[courseCode.toUpperCase()] || null;
+    const clean = courseCode.toUpperCase().trim();
+    if (lookup[clean]) return lookup[clean];
+    if (this.courseKeywords && this.courseKeywords[clean]) {
+      const target = this.courseKeywords[clean];
+      const targetCode = Array.isArray(target) ? target[0] : target;
+      if (lookup[targetCode]) return lookup[targetCode];
+    }
+    return null;
   },
 
   /**
@@ -667,6 +700,17 @@ const DATABASE = {
   getProgramName(programKey) {
     const program = this.curriculum[programKey];
     return program ? program.name : null;
+  },
+
+  /**
+   * Get all available programs list
+   */
+  getProgramsList() {
+    return Object.keys(this.curriculum).map(key => ({
+      key: key,
+      name: this.curriculum[key].name,
+      totalCredits: this.curriculum[key].totalCredits
+    }));
   }
 };
 
