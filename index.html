@@ -147,34 +147,73 @@
             --color-on-surface-variant: #474552;
             --color-primary: #12005d;
             --color-primary-container: #27187e;
+            --color-surface-container-lowest: #ffffff;
+            --color-surface-container-low: #f3f3fb;
             --color-surface-container: #ededf5;
             --color-surface-container-high: #e7e7ef;
+            --color-surface-container-highest: #e2e2ea;
             --color-outline-variant: #c8c4d4;
             --color-surface-bright: #f9f9ff;
         }
 
         html.dark {
-            --color-background: #0f0f1a;
-            --color-on-surface: #f0f0f8;
-            --color-on-surface-variant: #c8c4d4;
+            --color-background: #0d0e17;
+            --color-on-surface: #f1f1fa;
+            --color-on-surface-variant: #a8a5b8;
             --color-primary: #c6c0ff;
             --color-primary-container: #27187e;
-            --color-surface-container: #1e1e2e;
-            --color-surface-container-high: #28293d;
-            --color-outline-variant: #474552;
-            --color-surface-bright: #1a1b26;
+            --color-surface-container-lowest: #080910;
+            --color-surface-container-low: #131422;
+            --color-surface-container: #1a1b2c;
+            --color-surface-container-high: #22243a;
+            --color-surface-container-highest: #2d304c;
+            --color-outline-variant: #3a3b50;
+            --color-surface-bright: #151627;
+            color-scheme: dark;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
+        html {
+            width: 100%;
+            max-width: 100%;
+            scroll-behavior: auto !important;
         }
 
-        html,
         body {
             width: 100%;
             max-width: 100%;
             overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Hardware acceleration for sticky blurred surfaces to eliminate scroll repaint jank */
+        header,
+        #mobileBottomNav {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        /* ===== LENIS SMOOTH SCROLL ===== */
+        html.lenis,
+        html.lenis body {
+            height: auto;
+        }
+
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+
+        .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+        }
+
+        .lenis.lenis-stopped {
+            overflow: clip;
+        }
+
+        .lenis.lenis-smooth iframe {
+            pointer-events: none;
         }
 
         .material-symbols-outlined {
@@ -185,11 +224,6 @@
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-        }
-
-        .dark .glass-panel {
-            background: rgba(26, 27, 38, 0.7);
-            border-color: rgba(198, 192, 255, 0.1);
         }
 
         .autocomplete-container {
@@ -218,13 +252,15 @@
         }
 
         .autocomplete-item {
-            padding: 0.75rem 1rem;
+            padding: 0.65rem 1rem;
             cursor: pointer;
             border-bottom: 1px solid #f3f3fb;
             transition: background-color 150ms ease;
             display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
         }
 
         .autocomplete-item:hover,
@@ -250,192 +286,462 @@
             padding: 2rem !important;
         }
 
-        /* Dark Mode Overrides */
-        .dark .autocomplete-suggestions {
-            background: #161621;
-            border-color: #474552;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .dark .autocomplete-item {
-            border-bottom-color: #1e1e2e;
-        }
-
-        .dark .autocomplete-item:hover,
-        .dark .autocomplete-item.highlighted {
-            background-color: #1e1e2e;
-        }
-
-        .dark .autocomplete-item-code {
-            color: #c6c0ff;
-        }
-
-        .dark .autocomplete-item-name {
-            color: #c8c4d4;
-        }
-
-        .dark .empty-row {
-            color: #c8c4d4;
-        }
-
-        /* Dark Mode Header */
-        .dark header {
-            background-color: rgba(15, 15, 26, 0.9) !important;
-            border-color: rgba(147, 143, 153, 0.2) !important;
-        }
-
-        /* Dark Mode Text Colors */
+        /* ============================================================
+           MODERN DARK THEME SYSTEM (MOBILE & DESKTOP)
+           ============================================================ */
+        
+        /* Base page and body */
         html.dark {
-            background-color: #0f0f1a !important;
+            background-color: #0d0e17 !important;
         }
 
         html.dark body {
-            background-color: #0f0f1a !important;
-            color: #f0f0f8 !important;
+            background-color: #0d0e17 !important;
+            color: #f1f1fa;
         }
 
         html.dark main {
-            background-color: #0f0f1a !important;
+            background-color: #0d0e17 !important;
         }
 
+        /* Surface Color Tokens in Dark Mode */
+        html.dark .bg-background {
+            background-color: #0d0e17 !important;
+        }
+
+        html.dark .bg-surface {
+            background-color: #0d0e17 !important;
+        }
+
+        html.dark .bg-surface-container-lowest {
+            background-color: #080910 !important;
+        }
+
+        html.dark .bg-surface-container-low {
+            background-color: #131422 !important;
+        }
+
+        html.dark .bg-surface-container {
+            background-color: #1a1b2c !important;
+        }
+
+        html.dark .bg-surface-container-high {
+            background-color: #22243a !important;
+        }
+
+        html.dark .bg-surface-container-highest {
+            background-color: #2d304c !important;
+        }
+
+        /* Border Color Overrides */
+        html.dark .border-outline-variant,
+        html.dark .border-outline-variant\/10,
+        html.dark .border-outline-variant\/15,
+        html.dark .border-outline-variant\/20,
+        html.dark .border-outline-variant\/30,
+        html.dark .border-outline-variant\/40,
+        html.dark .border-outline-variant\/50 {
+            border-color: rgba(198, 192, 255, 0.14) !important;
+        }
+
+        html.dark .border-primary\/10,
+        html.dark .border-primary\/20 {
+            border-color: rgba(198, 192, 255, 0.22) !important;
+        }
+
+        /* Typography */
         html.dark h1,
         html.dark h2,
         html.dark h3,
         html.dark h4,
         html.dark h5,
         html.dark h6 {
-            color: #f0f0f8 !important;
+            color: #f1f1fa;
         }
 
-        html.dark p,
-        html.dark span,
-        html.dark label {
-            color: #c8c4d4 !important;
+        html.dark .text-on-surface {
+            color: #f1f1fa !important;
         }
 
-        /* Dark Mode Form Elements */
-        html.dark input,
-        html.dark select,
-        html.dark textarea {
-            background-color: #161621 !important;
-            color: #f0f0f8 !important;
-            border-color: #474552 !important;
-        }
-
-        html.dark input::placeholder,
-        html.dark select::placeholder,
-        html.dark textarea::placeholder {
-            color: #938f99 !important;
-        }
-
-        html.dark input:focus,
-        html.dark select:focus,
-        html.dark textarea:focus {
-            border-color: #c6c0ff !important;
-            box-shadow: 0 0 0 1px #c6c0ff !important;
-        }
-
-        /* Dark Mode Buttons */
-        html.dark button {
-            transition: all 0.3s ease;
-        }
-
-        /* Dark Mode Tables */
-        html.dark table {
-            background-color: #0f0f1a !important;
-            color: #f0f0f8 !important;
-        }
-
-        html.dark th {
-            background-color: #28293d !important;
-            color: #c6c0ff !important;
-            border-color: #474552 !important;
-        }
-
-        html.dark td {
-            border-color: #474552 !important;
-            color: #f0f0f8 !important;
-        }
-
-        html.dark tr:hover {
-            background-color: #1e1e2e !important;
-        }
-
-        /* Dark Mode Cards - Tailwind Color Classes */
-        html.dark .bg-background {
-            background-color: #0f0f1a !important;
-        }
-
-        html.dark .bg-primary-container {
-            background-color: #27187e !important;
-        }
-
-        html.dark .bg-surface-container {
-            background-color: #1e1e2e !important;
-        }
-
-        html.dark .bg-surface-container-high {
-            background-color: #28293d !important;
-        }
-
-        html.dark .bg-surface-container-low {
-            background-color: #161621 !important;
-        }
-
-        html.dark .bg-surface-container-lowest {
-            background-color: #0a0a0f !important;
+        html.dark .text-on-surface-variant {
+            color: #a8a5b8 !important;
         }
 
         html.dark .text-primary {
             color: #c6c0ff !important;
         }
 
-        html.dark .text-on-surface {
-            color: #f0f0f8 !important;
+        /* Frosted Glass Header */
+        html.dark header {
+            background: rgba(13, 14, 23, 0.85) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-bottom: 1px solid rgba(198, 192, 255, 0.12) !important;
         }
 
-        html.dark .text-on-surface-variant {
-            color: #c8c4d4 !important;
+        html.dark header [data-nav-view].active,
+        html.dark header [data-nav-view].bg-primary\/10 {
+            background: rgba(198, 192, 255, 0.16) !important;
+            color: #c6c0ff !important;
+            border: 1px solid rgba(198, 192, 255, 0.25) !important;
         }
 
-        html.dark .text-on-primary-container {
-            color: #e4dfff !important;
+        html.dark header [data-nav-view]:not(.active):not(.bg-primary\/10) {
+            color: #a8a5b8 !important;
         }
 
-        html.dark .border-primary {
-            border-color: #c6c0ff !important;
+        html.dark header [data-nav-view]:not(.active):not(.bg-primary\/10):hover {
+            color: #f1f1fa !important;
+            background: rgba(255, 255, 255, 0.06) !important;
         }
 
-        html.dark .border-outline-variant {
-            border-color: #474552 !important;
+        html.dark header #themeToggle {
+            color: #c6c0ff;
         }
 
-        /* Dark Mode Links */
-        html.dark a {
+        html.dark header #themeToggle:hover {
+            background: rgba(198, 192, 255, 0.12) !important;
+        }
+
+        /* Mobile Bottom Navigation */
+        html.dark #mobileBottomNav,
+        html.dark nav.fixed.bottom-0 {
+            background: rgba(13, 14, 23, 0.88) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-top: 1px solid rgba(198, 192, 255, 0.12) !important;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        html.dark #mobileBottomNav [data-nav-view],
+        html.dark nav.fixed.bottom-0 [data-nav-view] {
+            color: #7d7a90 !important;
+            background: transparent !important;
+            border: 1px solid transparent;
+        }
+
+        html.dark #mobileBottomNav [data-nav-view] span,
+        html.dark nav.fixed.bottom-0 [data-nav-view] span {
+            color: inherit !important;
+        }
+
+        html.dark #mobileBottomNav [data-nav-view]:hover,
+        html.dark nav.fixed.bottom-0 [data-nav-view]:hover {
+            color: #f1f1fa !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        html.dark #mobileBottomNav [data-nav-view].active,
+        html.dark nav.fixed.bottom-0 [data-nav-view].active,
+        html.dark #mobileBottomNav [data-nav-view].bg-primary\/10,
+        html.dark nav.fixed.bottom-0 [data-nav-view].bg-primary\/10 {
+            background: rgba(198, 192, 255, 0.16) !important;
+            color: #c6c0ff !important;
+            border: 1px solid rgba(198, 192, 255, 0.28) !important;
+            box-shadow: 0 0 16px rgba(198, 192, 255, 0.12) !important;
+        }
+
+        /* Quick Stats Grid */
+        html.dark .stat-card.bg-primary-container {
+            background: linear-gradient(135deg, #1f1152 0%, #312185 50%, #4333a8 100%) !important;
+            border: 1px solid rgba(198, 192, 255, 0.28) !important;
+            box-shadow: 0 8px 28px rgba(31, 19, 102, 0.35) !important;
+        }
+
+        html.dark .stat-card.bg-primary-container #cgpaValue {
+            color: #ffffff !important;
+            text-shadow: 0 0 16px rgba(198, 192, 255, 0.4);
+        }
+
+        html.dark .stat-card.bg-primary-container span {
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        html.dark .stat-card:not(.bg-primary-container) {
+            background-color: #161729 !important;
+            border: 1px solid rgba(198, 192, 255, 0.12) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        html.dark .stat-card #creditsValue,
+        html.dark .stat-card #standingValue,
+        html.dark .stat-card #progressInfo {
             color: #c6c0ff !important;
         }
 
-        html.dark a:hover {
-            color: #e4dfff !important;
+        html.dark #progressFill {
+            background: linear-gradient(90deg, #6366f1, #a5b4fc) !important;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.45) !important;
         }
 
-        /* Dark Mode Semester Summary */
+        /* Glass Panels & Cards */
+        html.dark .glass-panel {
+            background: rgba(22, 23, 38, 0.75) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-color: rgba(198, 192, 255, 0.12) !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+        }
+
+        /* Form Inputs & Dropdowns */
+        html.dark input,
+        html.dark select,
+        html.dark textarea {
+            background-color: #121320 !important;
+            color: #f1f1fa !important;
+            border-color: rgba(198, 192, 255, 0.18) !important;
+        }
+
+        html.dark input::placeholder,
+        html.dark select::placeholder,
+        html.dark textarea::placeholder {
+            color: #6e6a80 !important;
+        }
+
+        html.dark input:focus,
+        html.dark select:focus,
+        html.dark textarea:focus {
+            border-color: #c6c0ff !important;
+            box-shadow: 0 0 0 2px rgba(198, 192, 255, 0.2) !important;
+            outline: none !important;
+        }
+
+        html.dark select option {
+            background-color: #18192b;
+            color: #f1f1fa;
+        }
+
+        /* Action Buttons */
+        html.dark #addCourseBtn {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(198, 192, 255, 0.3) !important;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        html.dark #addCourseBtn:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%) !important;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+        }
+
+        html.dark #addCourseBtn span {
+            color: #ffffff !important;
+        }
+
+        html.dark #clearAllBtn {
+            background-color: rgba(220, 38, 38, 0.88) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(239, 68, 68, 0.4) !important;
+        }
+
+        html.dark #clearAllBtn:hover {
+            background-color: #dc2626 !important;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35) !important;
+        }
+
+        /* Autocomplete Suggestions */
+        html.dark .autocomplete-suggestions {
+            background: #141524 !important;
+            border: 1px solid rgba(198, 192, 255, 0.22) !important;
+            border-top: none !important;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        html.dark .autocomplete-item {
+            border-bottom-color: rgba(198, 192, 255, 0.08) !important;
+        }
+
+        html.dark .autocomplete-item:hover,
+        html.dark .autocomplete-item.highlighted {
+            background-color: rgba(198, 192, 255, 0.12) !important;
+        }
+
+        html.dark .autocomplete-item-code {
+            color: #c6c0ff !important;
+        }
+
+        html.dark .autocomplete-item-name {
+            color: #d1cfe0 !important;
+        }
+
+        /* Mobile Course Cards */
+        html.dark .course-mobile-card {
+            background-color: #151627 !important;
+            border-color: rgba(198, 192, 255, 0.12) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        html.dark .course-mobile-card .marks-input {
+            background-color: #1e2034 !important;
+            border-color: rgba(198, 192, 255, 0.22) !important;
+            color: #ffffff !important;
+        }
+
+        html.dark .course-mobile-card .grade-cell,
+        html.dark .course-mobile-card .gpa-cell {
+            background-color: #1e2034 !important;
+            border: 1px solid rgba(198, 192, 255, 0.12) !important;
+            color: #c6c0ff !important;
+        }
+
+        html.dark .course-mobile-card .delete-btn {
+            color: #f87171 !important;
+        }
+
+        html.dark .course-mobile-card .delete-btn:hover {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+
+        html.dark .course-mobile-card span.bg-primary\/10 {
+            background-color: rgba(198, 192, 255, 0.15) !important;
+            border: 1px solid rgba(198, 192, 255, 0.22) !important;
+            color: #c6c0ff !important;
+        }
+
+        html.dark .empty-mobile-courses {
+            background-color: rgba(26, 27, 44, 0.5) !important;
+            border-color: rgba(198, 192, 255, 0.12) !important;
+            color: #a8a5b8 !important;
+        }
+
+        /* Desktop Table */
+        html.dark thead.bg-\[\#27187E\] {
+            background: #1e1b4b !important;
+            border-bottom: 1px solid rgba(198, 192, 255, 0.15) !important;
+        }
+
+        html.dark thead th {
+            color: #c6c0ff !important;
+            background: transparent !important;
+        }
+
+        html.dark #coursesTableBody tr {
+            border-bottom-color: rgba(198, 192, 255, 0.08) !important;
+        }
+
+        html.dark #coursesTableBody tr:hover {
+            background-color: rgba(198, 192, 255, 0.04) !important;
+        }
+
+        html.dark #coursesTableBody .marks-input {
+            background: #18192b !important;
+            border: 1px solid rgba(198, 192, 255, 0.22) !important;
+            color: #ffffff !important;
+        }
+
+        html.dark #coursesTableBody .grade-cell,
+        html.dark #coursesTableBody .gpa-cell {
+            color: #c6c0ff !important;
+            font-weight: 800;
+        }
+
+        html.dark .empty-row {
+            color: #a8a5b8 !important;
+        }
+
+        /* Semester Summary */
         html.dark #semesterSummary {
-            background-color: #1e1e2e !important;
+            background-color: #161729 !important;
+            border: 1px solid rgba(198, 192, 255, 0.15) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
         }
 
         html.dark #semesterSummary .bg-surface-container-highest {
-            background-color: #28293d !important;
-        }
-
-        html.dark #semesterSummary .text-on-surface-variant {
-            color: #c8c4d4 !important;
+            background-color: #202236 !important;
+            border: 1px solid rgba(198, 192, 255, 0.1) !important;
         }
 
         html.dark #semesterSummary #semesterTotalCredits,
         html.dark #semesterSummary #semesterGradePoints,
         html.dark #semesterSummary #semesterGPA {
             color: #c6c0ff !important;
+        }
+
+        /* Semesters View & Details */
+        html.dark #semestersGrid > div {
+            background-color: #18192b !important;
+            border-color: rgba(198, 192, 255, 0.14) !important;
+        }
+
+        html.dark #semestersGrid > div:hover {
+            border-color: rgba(198, 192, 255, 0.35) !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        html.dark #semesterDetailsView {
+            background-color: #18192b !important;
+            border-color: rgba(198, 192, 255, 0.16) !important;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        html.dark .sem-edit-mark-input {
+            background-color: #1e2034 !important;
+            border-color: rgba(198, 192, 255, 0.25) !important;
+            color: #ffffff !important;
+        }
+
+        /* Mobile Semester Details Cards */
+        html.dark #detailSemCoursesMobile > div {
+            background-color: #151627 !important;
+            border-color: rgba(198, 192, 255, 0.12) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        html.dark #detailSemCoursesMobile span.bg-primary\/10 {
+            background-color: rgba(198, 192, 255, 0.15) !important;
+            border-color: rgba(198, 192, 255, 0.22) !important;
+            color: #c6c0ff !important;
+        }
+
+        /* Opacity Fallback Protections */
+        html.dark [class*="text-primary/"] {
+            color: #c6c0ff !important;
+        }
+
+        html.dark [class*="bg-surface-container-high/"] {
+            background-color: #22243a !important;
+        }
+
+        /* Modals */
+        html.dark #addSemesterModal,
+        html.dark #versionModal {
+            background-color: rgba(5, 5, 12, 0.85) !important;
+            backdrop-filter: blur(20px) !important;
+        }
+
+        html.dark #addSemesterModalContent,
+        html.dark #versionModalContent {
+            background-color: #18192b !important;
+            border-color: rgba(198, 192, 255, 0.2) !important;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7) !important;
+        }
+
+        html.dark #btnSaveCurrent,
+        html.dark #btnConfirmSem {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(198, 192, 255, 0.3) !important;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        html.dark #btnSaveCurrent span,
+        html.dark #btnConfirmSem span {
+            color: #ffffff !important;
+        }
+
+        html.dark #btnStartFresh {
+            background-color: #22243a !important;
+            border-color: rgba(198, 192, 255, 0.15) !important;
+            color: #f1f1fa !important;
+        }
+
+        /* Links */
+        html.dark a.hover\:underline {
+            color: #c6c0ff !important;
+        }
+
+        html.dark a.hover\:underline:hover {
+            color: #e4dfff !important;
         }
 
         /* ===== ANIMATIONS ===== */
@@ -624,9 +930,9 @@
             animation: fadeSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
-        /* ===== SMOOTH SCROLL ===== */
+        /* ===== SCROLL BEHAVIOR ===== */
         html {
-            scroll-behavior: smooth;
+            scroll-behavior: auto !important;
         }
 
         /* ===== MAIN VIEW TRANSITIONS ===== */
@@ -786,51 +1092,51 @@
                             CGPA <br />Calculator.</h1>
                         <p class="text-on-surface-variant text-base sm:text-lg max-w-sm leading-relaxed">Calculate your SZABIST CGPA & SGPA with ZabCal</p>
                     </div>
-                    <!-- Quick Stats Display -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full md:w-auto min-w-0 anim-fade-up-d1">
+                    <!-- Quick Stats Display (2x2 Grid on Mobile, Responsive on Desktop) -->
+                    <div class="grid grid-cols-2 gap-2.5 sm:gap-4 w-full md:w-auto min-w-0 anim-fade-up-d1">
                         <div
-                            class="stat-card p-4 sm:p-6 rounded-xl bg-primary-container text-on-primary flex flex-col items-center justify-center text-center">
-                            <span class="text-xs uppercase tracking-widest opacity-80 mb-1 font-bold">Cumulative
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-primary-container text-on-primary flex flex-col items-center justify-center text-center shadow-md shadow-primary/10">
+                            <span class="text-[10px] sm:text-xs uppercase tracking-widest opacity-80 mb-0.5 sm:mb-1 font-bold">Cumulative
                                 GPA</span>
-                            <span class="text-4xl font-black" id="cgpaValue">0.00</span>
-                            <span class="text-[10px] mt-1 font-medium">CGPA</span>
+                            <span class="text-2xl sm:text-4xl font-black tracking-tight" id="cgpaValue">0.00</span>
+                            <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium opacity-90">CGPA</span>
                         </div>
                         <div
-                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
-                            <span class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Total
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
+                            <span class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Total
                                 Credits</span>
-                            <span class="text-4xl font-black text-primary" id="creditsValue">0</span>
-                            <span class="text-[10px] mt-1 font-medium text-on-surface-variant"
+                            <span class="text-2xl sm:text-4xl font-black text-primary tracking-tight" id="creditsValue">0</span>
+                            <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium text-on-surface-variant"
                                 id="creditsInfo">remaining</span>
                         </div>
                         <div
-                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
                             <span
-                                class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Academic
+                                class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Academic
                                 Standing</span>
-                            <span class="text-2xl font-black text-primary leading-tight"
+                            <span class="text-base sm:text-2xl font-black text-primary leading-tight truncate max-w-full"
                                 id="standingValue">Freshman</span>
-                            <span class="text-[10px] mt-1 font-medium text-on-surface-variant"
+                            <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium text-on-surface-variant"
                                 id="standingInfo">Level</span>
                         </div>
                         <div
-                            class="stat-card p-4 sm:p-6 rounded-xl bg-surface-container-high flex flex-col items-center justify-center text-center">
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
                             <span
-                                class="text-xs uppercase tracking-widest text-on-surface-variant mb-1 font-bold">Progress</span>
-                            <span class="text-2xl font-black text-primary" id="progressInfo">0%</span>
-                            <div class="w-16 h-1.5 bg-outline-variant/30 rounded-full mt-2 mb-2 overflow-hidden">
+                                class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Progress</span>
+                            <span class="text-base sm:text-2xl font-black text-primary" id="progressInfo">0%</span>
+                            <div class="w-12 sm:w-16 h-1.5 bg-outline-variant/30 rounded-full mt-1.5 mb-1.5 overflow-hidden">
                                 <div id="progressFill" class="h-full bg-primary transition-all duration-300"
                                     style="width: 0%"></div>
                             </div>
                             <div class="relative group cursor-help inline-flex items-center justify-center mt-0.5"
                                 id="coursesCompletedContainer"
                                 title="This only updates when you save a semester in the Semesters section.">
-                                <span class="text-[10px] font-medium text-on-surface-variant tracking-tight flex items-center gap-1">
-                                    Total Courses Completed: <strong class="text-primary font-bold" id="totalCoursesCompleted">0</strong>
-                                    <span class="material-symbols-outlined text-[13px] text-on-surface-variant/70 group-hover:text-primary transition-colors">info</span>
+                                <span class="text-[9px] sm:text-[10px] font-medium text-on-surface-variant tracking-tight flex items-center gap-1 text-center">
+                                    Completed: <strong class="text-primary font-bold" id="totalCoursesCompleted">0</strong>
+                                    <span class="material-symbols-outlined text-[12px] sm:text-[13px] text-on-surface-variant/70 group-hover:text-primary transition-colors">info</span>
                                 </span>
                                 <!-- Hover Tooltip Box -->
-                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none w-48 text-center">
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none w-44 sm:w-48 text-center">
                                     <div class="bg-surface-container-highest text-on-surface text-[10px] font-semibold py-1.5 px-2.5 rounded-lg shadow-xl border border-outline-variant/30 leading-snug">
                                         This only updates when you save a semester in the Semesters section.
                                     </div>
@@ -889,36 +1195,43 @@
                                 </div>
 
                                 <!-- Add Course Input Form -->
-                                <div class="flex flex-col md:flex-row items-start md:items-center gap-4 mt-4 min-w-0">
+                                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-4 mt-4 min-w-0">
                                     <div class="flex-grow w-full md:w-auto autocomplete-container">
                                         <input
-                                            class="w-full bg-transparent border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-primary-container focus:border-primary-container transition-all text-sm font-medium text-on-surface"
+                                            class="w-full bg-transparent border border-outline-variant/50 rounded-xl px-4 py-3 sm:py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-medium text-on-surface"
                                             placeholder="Enter course code or name" type="text" id="courseCodeInput"
                                             autocomplete="off" />
-                                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+                                        <div class="autocomplete-suggestions" id="autocompleteSuggestions" data-lenis-prevent></div>
                                     </div>
-                                    <div class="w-full md:w-32">
-                                        <input
-                                            class="w-full bg-transparent border border-outline-variant/50 rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-primary-container focus:border-primary-container transition-all text-sm font-medium text-on-surface"
-                                            max="100" min="0" placeholder="Marks (0-100)" type="number"
-                                            id="courseMarksInput" />
+                                    <div class="grid grid-cols-2 md:flex md:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
+                                        <div class="w-full md:w-32">
+                                            <input
+                                                class="w-full bg-transparent border border-outline-variant/50 rounded-xl px-4 py-3 sm:py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-bold text-on-surface text-center md:text-left"
+                                                max="100" min="0" placeholder="Marks (0-100)" type="number"
+                                                id="courseMarksInput" />
+                                        </div>
+                                        <button
+                                            class="w-full md:w-auto bg-[#27187E] text-white px-6 py-3 sm:py-2.5 rounded-xl font-bold text-sm hover:bg-[#1f1366] hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all whitespace-nowrap shadow-sm flex items-center justify-center gap-1.5"
+                                            id="addCourseBtn">
+                                            <span class="material-symbols-outlined text-base sm:text-lg">add</span>
+                                            <span>Add Course</span>
+                                        </button>
                                     </div>
-                                    <button
-                                        class="w-full md:w-auto bg-[#27187E] text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-[#1f1366] hover:shadow-lg hover:shadow-primary/20 transition-all whitespace-nowrap shadow-sm"
-                                        id="addCourseBtn">
-                                        Add Course
-                                    </button>
                                 </div>
-                                <div class="flex justify-end mt-2">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
+                                    <p class="text-[11px] text-on-surface-variant/80 flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[15px] text-primary">tips_and_updates</span>
+                                        <span>Tip: Search by code, name, or type <span class="font-bold text-on-surface">"Elective"</span> to explore Domain & University electives.</span>
+                                    </p>
                                     <button
-                                        class="bg-[#ba1a1a] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#93000a] hover:shadow-lg transition-all shadow-sm hidden"
+                                        class="self-end bg-[#ba1a1a] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#93000a] hover:shadow-lg transition-all shadow-sm hidden"
                                         id="clearAllBtn">
                                         Clear All Courses
                                     </button>
                                 </div>
 
-                                <!-- Course Table -->
-                                <div class="mt-6 border border-outline-variant/20 rounded-xl overflow-hidden">
+                                <!-- Desktop Course Table (sm and above) -->
+                                <div class="mt-6 border border-outline-variant/20 rounded-xl overflow-hidden hidden sm:block">
                                     <div class="overflow-x-auto max-w-full overscroll-x-contain">
                                         <table class="w-full min-w-[700px] text-left border-collapse whitespace-nowrap">
                                             <thead class="bg-[#27187E] text-white text-xs uppercase tracking-wider">
@@ -943,6 +1256,14 @@
                                         </table>
                                     </div>
                                 </div>
+
+                                <!-- Mobile Course Cards List (< sm) -->
+                                <div id="coursesMobileList" class="mt-4 sm:hidden flex flex-col gap-2.5">
+                                    <div class="empty-mobile-courses p-6 text-center text-xs font-medium text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center gap-2">
+                                        <span class="material-symbols-outlined text-3xl text-primary">menu_book</span>
+                                        <p>No courses added. Add a course to get started.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -952,20 +1273,20 @@
                         class="bg-surface-container-low rounded-xl p-4 sm:p-6 hidden anim-scale-in">
                         <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4">Semester Summary
                         </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-                            <div class="p-4 bg-surface-container-highest rounded-lg">
-                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">Total Credits
+                        <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                            <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
+                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">Credits
                                 </p>
-                                <p class="text-2xl font-black text-primary" id="semesterTotalCredits">0</p>
+                                <p class="text-lg sm:text-2xl font-black text-primary" id="semesterTotalCredits">0</p>
                             </div>
-                            <div class="p-4 bg-surface-container-highest rounded-lg">
-                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">Grade Points
+                            <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
+                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">Points
                                 </p>
-                                <p class="text-2xl font-black text-primary" id="semesterGradePoints">0.00</p>
+                                <p class="text-lg sm:text-2xl font-black text-primary" id="semesterGradePoints">0.00</p>
                             </div>
-                            <div class="p-4 bg-surface-container-highest rounded-lg">
-                                <p class="text-xs uppercase tracking-widest text-on-surface-variant mb-1">SGPA</p>
-                                <p class="text-2xl font-black text-primary" id="semesterGPA">0.00</p>
+                            <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
+                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">SGPA</p>
+                                <p class="text-lg sm:text-2xl font-black text-primary" id="semesterGPA">0.00</p>
                             </div>
                         </div>
                     </div>
@@ -1051,7 +1372,7 @@
                             </div>
 
                             <div id="miniSemestersList"
-                                class="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[250px] pr-2">
+                                class="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[250px] pr-2" data-lenis-prevent>
                                 <!-- Minified semester cards appended here by JS -->
                                 <div class="flex flex-col items-center justify-center h-full opacity-50">
                                     <span class="material-symbols-outlined text-3xl mb-2">school</span>
@@ -1116,13 +1437,13 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-primary/80">
+                        <p class="text-sm font-medium text-on-surface-variant">
                             Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
                                 class="text-primary font-bold hover:underline">Wasiq</a>
                         </p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                        <p class="text-[11px] text-on-surface-variant/70 font-medium tracking-tight">
                             All calculations run locally in your browser. No data is sent to any server.
                         </p>
                     </div>
@@ -1181,7 +1502,7 @@
                                 <span>Edit Marks</span>
                             </button>
                             <button id="btnCloseDetails"
-                                class="p-2 sm:p-2.5 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant hover:text-on-surface shrink-0 hover:scale-105 active:scale-95 bg-surface-container-high/60 sm:bg-transparent"
+                                class="p-2 sm:p-2.5 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant hover:text-on-surface shrink-0 hover:scale-105 active:scale-95 bg-surface-container-high sm:bg-transparent"
                                 title="Close details">
                                 <span class="material-symbols-outlined text-xl">close</span>
                             </button>
@@ -1244,13 +1565,13 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-primary/80">
+                        <p class="text-sm font-medium text-on-surface-variant">
                             Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
                                 class="text-primary font-bold hover:underline">Wasiq</a>
                         </p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                        <p class="text-[11px] text-on-surface-variant/70 font-medium tracking-tight">
                             All calculations run locally in your browser. No data is sent to any server.
                         </p>
                     </div>
@@ -1396,13 +1717,13 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-primary/80">
+                        <p class="text-sm font-medium text-on-surface-variant">
                             Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
                                 class="text-primary font-bold hover:underline">Wasiq</a>
                         </p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[11px] text-primary/40 font-medium tracking-tight">
+                        <p class="text-[11px] text-on-surface-variant/70 font-medium tracking-tight">
                             All calculations run locally in your browser. No data is sent to any server.
                         </p>
                     </div>
@@ -1411,9 +1732,9 @@
         </main>
 
         <!-- Mobile Bottom Navigation -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-3 py-2 safe-bottom">
+        <nav id="mobileBottomNav" class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-3 py-2 safe-bottom">
             <div class="grid grid-cols-3 gap-2 max-w-md mx-auto">
-                <a class="flex flex-col items-center justify-center py-2 rounded-xl bg-primary/10 text-primary font-bold transition-all"
+                <a class="flex flex-col items-center justify-center py-2 rounded-xl bg-primary/10 text-primary font-bold transition-all active"
                     data-nav-view="calculator" href="#calculator" onclick="window.uiManager.navigateTo('calculator'); return false;">
                     <span class="material-symbols-outlined text-[20px]">calculate</span>
                     <span class="text-[10px] uppercase tracking-wider">Calculator</span>
@@ -1434,7 +1755,7 @@
         <div id="addSemesterModal"
             class="fixed inset-0 bg-[#0f0f1a]/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-surface-container rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
-                id="addSemesterModalContent">
+                id="addSemesterModalContent" data-lenis-prevent>
                 <div class="flex justify-between items-center">
                     <h3 class="text-2xl font-black text-on-surface">Add Semester</h3>
                     <button id="btnCloseAddModal" class="text-outline-variant hover:text-error transition-colors">
@@ -1529,34 +1850,34 @@
         <!-- Version Details Modal -->
         <div id="versionModal"
             class="fixed inset-0 bg-[#0f0f1a]/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-            <div class="bg-surface-container rounded-3xl w-full max-w-md p-6 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
-                id="versionModalContent">
+            <div class="bg-surface-container rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
+                id="versionModalContent" data-lenis-prevent>
                 <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-black text-on-surface">Version 2.2 Changes</h3>
+                    <h3 class="text-2xl font-black text-on-surface">Version 2.3 Changes</h3>
                     <button id="btnCloseVersionModal" class="text-outline-variant hover:text-error transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 <div class="space-y-4 text-sm text-on-surface-variant leading-relaxed">
                     <div class="flex gap-3">
-                        <span class="text-primary font-bold">Animation:</span>
-                        <p>Added custom vector logo splash & intro loading animation on app startup.</p>
+                        <span class="text-primary font-bold">Theme:</span>
+                        <p>Overhauled dark theme on mobile & desktop with modern glassmorphism, crisp contrast, and refined surfaces.</p>
                     </div>
                     <div class="flex gap-3">
-                        <span class="text-primary font-bold">Accuracy:</span>
-                        <p>Corrected rounding logic: Marks .5 and above now round up to the next grade.</p>
+                        <span class="text-primary font-bold">Mobile UI:</span>
+                        <p>Replaced wide tables with native mobile course cards, 2x2 Quick Stats grid, and touch-optimized bottom navigation.</p>
                     </div>
                     <div class="flex gap-3">
-                        <span class="text-primary font-bold">PWA:</span>
-                        <p>Added PWA support: Now installable as a Web App on mobile devices.</p>
+                        <span class="text-primary font-bold">Electives:</span>
+                        <p>Added 180+ Domain & University Electives for CS, SE, AI, and BBA with program-specific filtering.</p>
                     </div>
                     <div class="flex gap-3">
-                        <span class="text-primary font-bold">Visuals:</span>
-                        <p>Added custom Favicon: Graduation cap icon added to tabs and home screen.</p>
+                        <span class="text-primary font-bold">Grading:</span>
+                        <p>Enforced SZABIST Grade Replacement policy: Repeated courses count highest attempt in CGPA and credits once.</p>
                     </div>
                     <div class="flex gap-3">
-                        <span class="text-primary font-bold">UI:</span>
-                        <p>UI Improvements: Enhanced mobile layout and navigation.</p>
+                        <span class="text-primary font-bold">Editing:</span>
+                        <p>Added in-place course marks editing inside saved semesters with live SGPA recalculation.</p>
                     </div>
                 </div>
             </div>
@@ -1565,9 +1886,15 @@
     </div>
 
     <!-- JavaScript Files -->
+    <script src="lenis.min.js"></script>
+    <script>
+        if (typeof Lenis === 'undefined') {
+            document.write('<script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"><\\/script>');
+        }
+    </script>
     <script src="Animation.js?v=1"></script>
-    <script src="database.js?v=4"></script>
-    <script src="script.js?v=8"></script>
+    <script src="database.js?v=5"></script>
+    <script src="script.js?v=10"></script>
 </body>
 
 </html>

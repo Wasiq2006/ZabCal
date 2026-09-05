@@ -369,20 +369,42 @@ class UIManager {
                         if (!courseInfo) return false;
                         const keywordMatch = courseInfo.keywords &&
                             courseInfo.keywords.some(k => k.toLowerCase().includes(inputLower));
+                        const categoryMatch = courseInfo.category &&
+                            courseInfo.category.toLowerCase().includes(inputLower);
+                        const typeMatch = courseInfo.type &&
+                            courseInfo.type.toLowerCase().includes(inputLower);
                         return code.toLowerCase().includes(inputLower) ||
                             courseInfo.name.toLowerCase().includes(inputLower) ||
-                            keywordMatch;
+                            keywordMatch ||
+                            categoryMatch ||
+                            typeMatch;
                     })
                     .sort((a, b) => {
                         const aInfo = this.curriculumHandler.getCourseInfo(a);
                         const bInfo = this.curriculumHandler.getCourseInfo(b);
+                        const aCodeLower = a.toLowerCase();
+                        const bCodeLower = b.toLowerCase();
+                        // Exact code match
+                        if (aCodeLower === inputLower) return -1;
+                        if (bCodeLower === inputLower) return 1;
+                        // Starts with code
+                        const aCodeStarts = aCodeLower.startsWith(inputLower);
+                        const bCodeStarts = bCodeLower.startsWith(inputLower);
+                        if (aCodeStarts && !bCodeStarts) return -1;
+                        if (!aCodeStarts && bCodeStarts) return 1;
+                        // Starts with name
+                        const aNameStarts = aInfo?.name?.toLowerCase().startsWith(inputLower);
+                        const bNameStarts = bInfo?.name?.toLowerCase().startsWith(inputLower);
+                        if (aNameStarts && !bNameStarts) return -1;
+                        if (!aNameStarts && bNameStarts) return 1;
+                        // Keyword exact match
                         const aKw = aInfo?.keywords?.some(k => k.toLowerCase() === inputLower);
                         const bKw = bInfo?.keywords?.some(k => k.toLowerCase() === inputLower);
                         if (aKw && !bKw) return -1;
                         if (!aKw && bKw) return 1;
                         return 0;
                     })
-                    .slice(0, 8);
+                    .slice(0, 10);
             }
 
             if (matching.length === 0) {
@@ -470,21 +492,8 @@ class UIManager {
 
     restoreState() {
         const state = this.stateManager.getState();
-        const tbody = document.getElementById('coursesTableBody');
-
-        // Always reset table UI before restoring to avoid duplicate rows.
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
-        document.getElementById('clearAllBtn').style.display = 'none';
-
         this.updateProgramUI(state.program || '');
-
-        if (state.courses && state.courses.length > 0) {
-            state.courses.forEach((course) => {
-                this.addCourseToTable(course);
-            });
-
-            state.courses.forEach((_, index) => this.updateGradeDisplay(index));
-        }
+        this.renderCoursesList();
     }
 
     addCourse(courseCode, marks = null) {
@@ -549,61 +558,176 @@ class UIManager {
         return count >= 2;
     }
 
+    renderCoursesList() {
+        const state = this.stateManager.getState();
+        const courses = state.courses || [];
+        const tbody = document.getElementById('coursesTableBody');
+        const mobileList = document.getElementById('coursesMobileList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+
+        if (tbody) tbody.innerHTML = '';
+        if (mobileList) mobileList.innerHTML = '';
+
+        if (courses.length === 0) {
+            if (tbody) {
+                tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
+            }
+            if (mobileList) {
+                mobileList.innerHTML = `
+                    <div class="empty-mobile-courses p-6 text-center text-xs font-medium text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-3xl text-primary">menu_book</span>
+                        <p>No courses added. Add a course to get started.</p>
+                    </div>
+                `;
+            }
+            if (clearAllBtn) clearAllBtn.style.display = 'none';
+        } else {
+            if (clearAllBtn) clearAllBtn.style.display = 'flex';
+            courses.forEach((course, index) => {
+                this.renderCourseRow(course, index);
+                this.updateGradeDisplay(index);
+            });
+        }
+    }
+
+    renderCourseRow(course, courseIndex) {
+        const isRepeated = this.isCourseInSavedSemesters(course.code);
+        const tbody = document.getElementById('coursesTableBody');
+        const mobileList = document.getElementById('coursesMobileList');
+
+        // 1. Desktop Table Row
+        if (tbody) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="font-bold text-on-surface">${course.code}</div>
+                    ${isRepeated ? `<div class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 mt-1"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</div>` : ''}
+                </td>
+                <td>${course.name}</td>
+                <td>${course.credits}</td>
+                <td>
+                    <input 
+                        type="number" 
+                        class="marks-input" 
+                        min="0" 
+                        max="100" 
+                        placeholder="0-100"
+                        data-course-index="${courseIndex}"
+                        ${course.marks !== null ? `value="${course.marks}"` : ''}
+                    >
+                </td>
+                <td class="grade-cell" data-course-index="${courseIndex}">-</td>
+                <td class="gpa-cell" data-course-index="${courseIndex}">0.00</td>
+                <td>
+                    <button class="btn-danger delete-btn" data-course-index="${courseIndex}">Remove</button>
+                </td>
+            `;
+
+            const marksInput = row.querySelector('.marks-input');
+            if (marksInput) {
+                marksInput.addEventListener('input', (e) => {
+                    this.updateCourseMarks(courseIndex, e.target.value);
+                });
+            }
+
+            const deleteBtn = row.querySelector('.delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    this.removeCourse(courseIndex);
+                });
+            }
+
+            tbody.appendChild(row);
+        }
+
+        // 2. Mobile Course Card
+        if (mobileList) {
+            const card = document.createElement('div');
+            card.className = 'course-mobile-card p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/20 shadow-sm flex flex-col gap-2.5 transition-all';
+            card.setAttribute('data-course-index', courseIndex);
+            card.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-black text-xs tracking-wide">${course.code}</span>
+                        <span class="px-2 py-0.5 rounded-md bg-surface-container-highest text-on-surface-variant text-[11px] font-semibold">${course.credits} Cr</span>
+                        ${isRepeated ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeat</span>` : ''}
+                    </div>
+                    <button class="delete-btn p-1.5 rounded-lg text-outline hover:text-error hover:bg-error-container/20 transition-colors" data-course-index="${courseIndex}" title="Remove Course">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                </div>
+                <div class="text-xs font-bold text-on-surface leading-snug">${course.name}</div>
+                <div class="flex items-center justify-between gap-3 pt-1 border-t border-outline-variant/10">
+                    <div class="flex items-center gap-2">
+                        <label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Marks:</label>
+                        <input 
+                            type="number" 
+                            class="marks-input w-20 px-2.5 py-1.5 bg-surface-container-highest border border-outline-variant/30 rounded-lg text-xs font-bold text-center text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" 
+                            min="0" 
+                            max="100" 
+                            placeholder="0-100"
+                            data-course-index="${courseIndex}"
+                            ${course.marks !== null ? `value="${course.marks}"` : ''}
+                        >
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Grade</span>
+                            <span class="grade-cell text-xs font-black text-primary px-2 py-0.5 rounded-md bg-surface-container-highest min-w-[28px] text-center" data-course-index="${courseIndex}">-</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">GPA</span>
+                            <span class="gpa-cell text-xs font-black text-primary px-2 py-0.5 rounded-md bg-surface-container-highest min-w-[36px] text-center" data-course-index="${courseIndex}">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const marksInput = card.querySelector('.marks-input');
+            if (marksInput) {
+                marksInput.addEventListener('input', (e) => {
+                    this.updateCourseMarks(courseIndex, e.target.value);
+                });
+            }
+
+            const deleteBtn = card.querySelector('.delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    this.removeCourse(courseIndex);
+                });
+            }
+
+            mobileList.appendChild(card);
+        }
+    }
+
     addCourseToTable(course) {
         const tbody = document.getElementById('coursesTableBody');
+        const mobileList = document.getElementById('coursesMobileList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
 
-        // Remove empty row if exists
-        const emptyRow = tbody.querySelector('.empty-row');
-        if (emptyRow) emptyRow.remove();
+        if (tbody) {
+            const emptyRow = tbody.querySelector('.empty-row');
+            if (emptyRow) emptyRow.remove();
+        }
+        if (mobileList) {
+            const emptyMobile = mobileList.querySelector('.empty-mobile-courses');
+            if (emptyMobile) emptyMobile.remove();
+        }
 
-        // Show Clear All button
-        document.getElementById('clearAllBtn').style.display = 'flex';
+        if (clearAllBtn) clearAllBtn.style.display = 'flex';
 
-        const row = document.createElement('tr');
-        const courseIndex = this.stateManager.getState().courses.findIndex(c => c.code === course.code);
-        const isRepeated = this.isCourseInSavedSemesters(course.code);
+        const state = this.stateManager.getState();
+        let courseIndex = state.courses.findIndex(c => c.code === course.code);
+        if (courseIndex === -1) courseIndex = state.courses.length - 1;
 
-        row.innerHTML = `
-            <td>
-                <div class="font-bold text-on-surface">${course.code}</div>
-                ${isRepeated ? `<div class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 mt-1"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</div>` : ''}
-            </td>
-            <td>${course.name}</td>
-            <td>${course.credits}</td>
-            <td>
-                <input 
-                    type="number" 
-                    class="marks-input" 
-                    min="0" 
-                    max="100" 
-                    placeholder="0-100"
-                    data-course-index="${courseIndex}"
-                    ${course.marks !== null ? `value="${course.marks}"` : ''}
-                >
-            </td>
-            <td class="grade-cell" data-course-index="${courseIndex}">-</td>
-            <td class="gpa-cell" data-course-index="${courseIndex}">0.00</td>
-            <td>
-                <button class="btn-danger delete-btn" data-course-index="${courseIndex}">Remove</button>
-            </td>
-        `;
-
-        // Add event listeners
-        const marksInput = row.querySelector('.marks-input');
-        marksInput.addEventListener('input', (e) => {
-            this.updateCourseMarks(courseIndex, e.target.value);
-        });
-
-        row.querySelector('.delete-btn').addEventListener('click', () => {
-            this.removeCourse(courseIndex);
-        });
-
-        tbody.appendChild(row);
+        this.renderCourseRow(course, courseIndex);
     }
 
     updateCourseMarks(courseIndex, marks) {
         const state = this.stateManager.getState();
         const course = state.courses[courseIndex];
+        if (!course) return;
 
         if (marks === '') {
             course.marks = null;
@@ -623,84 +747,44 @@ class UIManager {
 
     updateGradeDisplay(courseIndex) {
         const course = this.stateManager.getState().courses[courseIndex];
-        const gradeCell = document.querySelector(`.grade-cell[data-course-index="${courseIndex}"]`);
-        const gpaCell = document.querySelector(`.gpa-cell[data-course-index="${courseIndex}"]`);
+        if (!course) return;
 
-        if (course.marks === null) {
-            gradeCell.textContent = '-';
-            gpaCell.textContent = '0.00';
-        } else {
+        const gradeCells = document.querySelectorAll(`.grade-cell[data-course-index="${courseIndex}"]`);
+        const gpaCells = document.querySelectorAll(`.gpa-cell[data-course-index="${courseIndex}"]`);
+
+        let gradeText = '-';
+        let gpaText = '0.00';
+
+        if (course.marks !== null) {
             const grade = this.gradingEngine.calculateGrade(course.marks);
-            gradeCell.textContent = grade ? grade.grade : 'F';
-            gpaCell.textContent = grade ? grade.gpa.toFixed(2) : '0.00';
+            gradeText = grade ? grade.grade : 'F';
+            gpaText = grade ? grade.gpa.toFixed(2) : '0.00';
         }
+
+        gradeCells.forEach(cell => { cell.textContent = gradeText; });
+        gpaCells.forEach(cell => { cell.textContent = gpaText; });
+
+        // Keep marks inputs synchronized across desktop and mobile
+        const marksInputs = document.querySelectorAll(`.marks-input[data-course-index="${courseIndex}"]`);
+        marksInputs.forEach(input => {
+            const val = course.marks !== null ? String(course.marks) : '';
+            if (input.value !== val) {
+                input.value = val;
+            }
+        });
     }
 
     removeCourse(courseIndex) {
         const state = this.stateManager.getState();
         state.courses.splice(courseIndex, 1);
         this.stateManager.setState({ courses: state.courses });
-
-        const tbody = document.getElementById('coursesTableBody');
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(row => row.remove());
-
-        if (state.courses.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
-            // Hide the Clear All button when no courses
-            document.getElementById('clearAllBtn').style.display = 'none';
-        } else {
-            state.courses.forEach((course, index) => {
-                // Update indices in remaining rows
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${course.code}</td>
-                    <td>${course.name}</td>
-                    <td>${course.credits}</td>
-                    <td>
-                        <input 
-                            type="number" 
-                            class="marks-input" 
-                            min="0" 
-                            max="100" 
-                            placeholder="0-100"
-                            data-course-index="${index}"
-                            ${course.marks !== null ? `value="${course.marks}"` : ''}
-                        >
-                    </td>
-                    <td class="grade-cell" data-course-index="${index}">-</td>
-                    <td class="gpa-cell" data-course-index="${index}">0.00</td>
-                    <td>
-                        <button class="btn-danger delete-btn" data-course-index="${index}">Remove</button>
-                    </td>
-                `;
-
-                const marksInput = row.querySelector('.marks-input');
-                marksInput.addEventListener('input', (e) => {
-                    this.updateCourseMarks(index, e.target.value);
-                });
-
-                row.querySelector('.delete-btn').addEventListener('click', () => {
-                    this.removeCourse(index);
-                });
-
-                tbody.appendChild(row);
-                this.updateGradeDisplay(index);
-            });
-        }
-
+        this.renderCoursesList();
         this.updateAllMetrics();
     }
 
     clearAllCourses() {
         this.stateManager.setState({ courses: [] });
-
-        const tbody = document.getElementById('coursesTableBody');
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No courses added. Add a course to get started.</td></tr>';
-
-        // Hide the Clear All button
-        document.getElementById('clearAllBtn').style.display = 'none';
-
+        this.renderCoursesList();
         this.updateAllMetrics();
     }
 
@@ -842,16 +926,32 @@ class UIManager {
         const container = document.getElementById('autocompleteSuggestions');
         container.innerHTML = suggestions.map((code, index) => {
             const courseInfo = this.curriculumHandler.getCourseInfo(code);
-            const kwBadge = courseInfo.keywords && courseInfo.keywords.length > 0
-                ? `<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0 ml-auto">${courseInfo.keywords[0]}</span>`
-                : '';
+            if (!courseInfo) return '';
+
+            let badgeHtml = '';
+            if (courseInfo.category && courseInfo.category !== 'Core') {
+                const isDomain = courseInfo.category.toLowerCase().includes('domain') ||
+                                 ['marketing', 'management', 'finance', 'supply chain', 'information technology', 'business analysis'].some(c => courseInfo.category.toLowerCase().includes(c));
+                const badgeClass = isDomain
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
+                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${badgeClass} shrink-0">${courseInfo.category}</span>`;
+            } else if (courseInfo.keywords && courseInfo.keywords.length > 0 && !courseInfo.keywords[0].includes('xxxx')) {
+                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">${courseInfo.keywords[0]}</span>`;
+            }
+
+            const creditsHtml = courseInfo.credits ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant shrink-0">${courseInfo.credits} Cr</span>` : '';
+
             return `
                 <div class="autocomplete-item ${index === 0 ? 'highlighted' : ''} flex items-center justify-between gap-2" data-index="${index}" data-code="${code}">
-                    <div class="flex items-center gap-2 min-w-0">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
                         <span class="autocomplete-item-code shrink-0">${code}</span>
                         <span class="autocomplete-item-name truncate">${courseInfo.name}</span>
                     </div>
-                    ${kwBadge}
+                    <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                        ${badgeHtml}
+                        ${creditsHtml}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -938,6 +1038,7 @@ class UIManager {
         });
 
         document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
+            window.lenis?.stop();
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
             step1.classList.remove('hidden');
@@ -947,7 +1048,10 @@ class UIManager {
 
         document.getElementById('btnCloseAddModal')?.addEventListener('click', () => {
             modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                window.lenis?.start();
+            }, 300);
         });
 
         document.getElementById('btnSaveCurrent')?.addEventListener('click', () => {
@@ -1037,6 +1141,7 @@ class UIManager {
             modal.classList.add('opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
+                window.lenis?.start();
                 this.navigateTo('semesters');
                 this.updateAllMetrics();
             }, 300);
@@ -1147,13 +1252,24 @@ class UIManager {
         this._syncNavState(this._activeView);
         if (this._activeView === 'about') {
             const aboutCard = document.getElementById('aboutHeroCard');
-            aboutCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (window.lenis) {
+                window.lenis.scrollTo(aboutCard, { offset: -24, duration: 1.2 });
+            } else {
+                aboutCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            if (window.lenis) {
+                window.lenis.scrollTo(0, { duration: 0.7 });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
     }
 
     _syncNavState(activeView) {
         document.querySelectorAll('[data-nav-view]').forEach(link => {
             const isActive = link.dataset.navView === activeView;
+            link.classList.toggle('active', isActive);
             link.classList.toggle('bg-primary/10', isActive);
             link.classList.toggle('text-primary', isActive);
             link.classList.toggle('hover:bg-primary/10', !isActive);
@@ -1226,7 +1342,7 @@ class UIManager {
                         <p class="text-2xl font-black text-on-surface">${sem.credits}</p>
                     </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors">
+                <div class="mt-4 pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-semibold text-primary group-hover:opacity-80 transition-opacity">
                     <span>View course details</span>
                     <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
@@ -1270,7 +1386,7 @@ class UIManager {
 
         if (!coursesToRender || coursesToRender.length === 0) {
             if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
-            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-sm text-on-surface-variant bg-surface-container-high/50 rounded-2xl border border-outline-variant/20">No courses found in this semester.</div>`;
+            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-sm text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20">No courses found in this semester.</div>`;
             return;
         }
 
@@ -1314,7 +1430,7 @@ class UIManager {
                 ` : `${course.marks !== null ? course.marks : '-'}`;
 
                 return `
-                    <tr class="hover:bg-surface-container-high/50 transition-colors border-b border-outline-variant/10">
+                    <tr class="hover:bg-surface-container-high/20 transition-colors border-b border-outline-variant/10">
                         <td class="py-3.5 pr-4">
                             <div class="font-bold text-on-surface text-sm flex flex-wrap items-center gap-2">
                                 <span>${course.code}</span>
@@ -1353,7 +1469,7 @@ class UIManager {
                 `;
 
                 return `
-                    <div class="p-3.5 bg-surface-container-high/70 rounded-2xl border border-outline-variant/20 flex flex-col gap-2.5">
+                    <div class="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col gap-2.5">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1">
@@ -1394,7 +1510,11 @@ class UIManager {
         // Scroll into view gently on mobile and desktop
         if (!isEditMode) {
             setTimeout(() => {
-                detailsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (window.lenis) {
+                    window.lenis.scrollTo(detailsView, { offset: -24, duration: 1.0 });
+                } else {
+                    detailsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }, 50);
         }
     }
@@ -1564,6 +1684,7 @@ function showVersionDetails() {
     const content = document.getElementById('versionModalContent');
     if (!modal || !content) return;
 
+    window.lenis?.stop();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
     content.classList.remove('scale-95');
@@ -1571,10 +1692,52 @@ function showVersionDetails() {
 
     document.getElementById('btnCloseVersionModal').onclick = () => {
         modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            window.lenis?.start();
+        }, 300);
         content.classList.add('scale-95');
         content.classList.remove('scale-100');
     };
+}
+
+
+// ============================================
+// LENIS SMOOTH SCROLL INITIALIZATION
+// ============================================
+
+function initLenis() {
+    if (typeof Lenis === 'undefined') return null;
+
+    // Respect user's motion preferences
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return null;
+    }
+
+    // On touch devices (phones/tablets), native scrolling runs on hardware-accelerated compositor threads (up to 120Hz).
+    // Running JS virtual scrollers on touch screens adds input delay and perceived chopiness.
+    // Delegating touch to native while using Lenis on desktop gives zero-jank buttery scrolling everywhere.
+    const isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
+    if (isTouchDevice) {
+        return null;
+    }
+
+    try {
+        const lenis = new Lenis({
+            lerp: 0.12, // Silky smooth linear interpolation with zero sluggish delay or dragging
+            wheelMultiplier: 1.0,
+            touchMultiplier: 1.0,
+            syncTouch: false,
+            autoRaf: true,
+            anchors: true
+        });
+
+        window.lenis = lenis;
+        return lenis;
+    } catch (err) {
+        console.warn('Lenis smooth scroll initialization error:', err);
+        return null;
+    }
 }
 
 
@@ -1583,5 +1746,6 @@ function showVersionDetails() {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    initLenis();
     window.uiManager = new UIManager();
 });
