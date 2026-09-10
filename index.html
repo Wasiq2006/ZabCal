@@ -3,28 +3,34 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
     <title>ZabCal - SZABIST CGPA & GPA Calculator</title>
 
     <!-- Primary Meta Tags -->
     <meta name="title" content="ZabCal - SZABIST CGPA & GPA Calculator">
-    <meta name="description" content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate your SGPA, cumulative CGPA, track repeating courses, and plan your SZABIST semesters effortlessly.">
-    <meta name="keywords" content="zabcal, ZabCal, SZABIST CGPA Calculator, SZABIST GPA Calculator, SZABIST CGPA & GPA Calculator, SZABIST SGPA Calculator, SZABIST CGPA, SZABIST GPA, SZABIST grading system, zabdesk gpa calculator, szabist calculator, szabist university, szabist karachi, szabist islamabad, szabist hyderabad, gpa calculator szabist, zabcal calculator">
+    <meta name="description"
+        content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate your SGPA, cumulative CGPA, track repeating courses, and plan your SZABIST semesters effortlessly.">
+    <meta name="keywords"
+        content="zabcal, ZabCal, SZABIST CGPA Calculator, SZABIST GPA Calculator, SZABIST CGPA & GPA Calculator, SZABIST SGPA Calculator, SZABIST CGPA, SZABIST GPA, SZABIST grading system, zabdesk gpa calculator, szabist calculator, szabist university, szabist karachi, szabist islamabad, szabist hyderabad, gpa calculator szabist, zabcal calculator">
     <meta name="author" content="ZabCal">
     <meta name="robots" content="index, follow">
-    <meta name="theme-color" content="#12005d">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f9fe">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#07080e">
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="ZabCal">
     <meta property="og:title" content="ZabCal - SZABIST CGPA & GPA Calculator">
-    <meta property="og:description" content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, track repeating courses, and manage semesters.">
+    <meta property="og:description"
+        content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, track repeating courses, and manage semesters.">
     <meta property="og:image" content="favicon.png">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="ZabCal - SZABIST CGPA & GPA Calculator">
-    <meta name="twitter:description" content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, and track your degree progress.">
+    <meta name="twitter:description"
+        content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, and track your degree progress.">
     <meta name="twitter:image" content="favicon.png">
 
     <!-- Structured Data (JSON-LD) for Search Engines -->
@@ -70,6 +76,7 @@
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -194,6 +201,38 @@
             -webkit-backface-visibility: hidden;
         }
 
+        /* ===== PRINT STYLES ===== */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #timetableExportArea,
+            #timetableExportArea * {
+                visibility: visible;
+            }
+
+            #timetableExportArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10mm !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            header,
+            nav,
+            #mobileBottomNav,
+            footer,
+            button,
+            .ui-button {
+                display: none !important;
+            }
+        }
+
         /* ===== LENIS SMOOTH SCROLL ===== */
         html.lenis,
         html.lenis body {
@@ -289,7 +328,7 @@
         /* ============================================================
            MODERN DARK THEME SYSTEM (MOBILE & DESKTOP)
            ============================================================ */
-        
+
         /* Base page and body */
         html.dark {
             background-color: #0d0e17 !important;
@@ -658,33 +697,87 @@
         }
 
         /* Semesters View & Details */
-        html.dark #semestersGrid > div {
+        html.dark #semestersGrid>div {
             background-color: #18192b !important;
             border-color: rgba(198, 192, 255, 0.14) !important;
         }
 
-        html.dark #semestersGrid > div:hover {
+        html.dark #semestersGrid>div:hover {
             border-color: rgba(198, 192, 255, 0.35) !important;
             box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4) !important;
         }
 
+        /* Semester Details Centered Pop-Up Modal */
+        #semesterDetailsView.hidden {
+            display: none !important;
+        }
+
+        #semesterDetailsView {
+            background-color: rgba(7, 8, 14, 0.82) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            z-index: 100 !important;
+            transition: opacity 0.3s ease;
+        }
+
         html.dark #semesterDetailsView {
-            background-color: #18192b !important;
-            border-color: rgba(198, 192, 255, 0.16) !important;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+            background-color: rgba(3, 4, 10, 0.88) !important;
+        }
+
+        #semesterDetailsCard {
+            background-color: #ffffff !important;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+            will-change: transform, opacity;
+        }
+
+        html.dark #semesterDetailsCard {
+            background-color: #141525 !important;
+            border-color: rgba(198, 192, 255, 0.18) !important;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65) !important;
+        }
+
+        /* Number input spinner arrows: Crisp white in both white and dark themes */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            filter: brightness(0) invert(1) !important;
+            opacity: 0.9 !important;
+            cursor: pointer;
+        }
+
+        input[type="number"]:hover::-webkit-inner-spin-button,
+        input[type="number"]:hover::-webkit-outer-spin-button {
+            opacity: 1 !important;
+        }
+
+        /* Marks input styling: Royal purple in light theme, dark indigo in dark theme, text and arrows pure white */
+        .sem-edit-mark-input {
+            background-color: #27187E !important;
+            border: 2px solid rgba(39, 24, 126, 0.4) !important;
+            color: #ffffff !important;
         }
 
         html.dark .sem-edit-mark-input {
             background-color: #1e2034 !important;
-            border-color: rgba(198, 192, 255, 0.25) !important;
+            border: 2px solid rgba(198, 192, 255, 0.3) !important;
             color: #ffffff !important;
         }
 
-        /* Mobile Semester Details Cards */
-        html.dark #detailSemCoursesMobile > div {
-            background-color: #151627 !important;
-            border-color: rgba(198, 192, 255, 0.12) !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+        /* Mobile Semester Details Course Cards */
+        #detailSemCoursesMobile>div {
+            background-color: #ffffff;
+            border: 1px solid rgba(200, 196, 212, 0.35);
+            box-shadow: 0 3px 12px rgba(39, 24, 126, 0.05);
+        }
+
+        html.dark #detailSemCoursesMobile>div {
+            background-color: #1a1c30 !important;
+            border-color: rgba(198, 192, 255, 0.14) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+        }
+
+        html.dark #detailSemCoursesMobile>div:hover {
+            border-color: rgba(198, 192, 255, 0.3) !important;
         }
 
         html.dark #detailSemCoursesMobile span.bg-primary\/10 {
@@ -809,15 +902,90 @@
             animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
-        .view-entering {
-            opacity: 0;
-            transform: translateY(12px) scale(0.99);
+        /* ===== MAIN PAGE VIEW TRANSITIONS ===== */
+        @keyframes pageViewEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.985);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
+        .page-view-animated,
+        .view-entering,
         .view-entering-active {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            animation: pageViewEntrance 0.35s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+            will-change: transform, opacity;
+        }
+
+        /* ===== SEMESTER POP-UP & CARD ANIMATIONS ===== */
+        @keyframes semCardEntrance {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes gradeBadgePop {
+            0% {
+                transform: scale(1);
+            }
+
+            40% {
+                transform: scale(1.12);
+            }
+
+            75% {
+                transform: scale(0.98);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes statPillarEntrance {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .sem-card-animated {
+            animation: semCardEntrance 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+            will-change: transform, opacity;
+        }
+
+        .sem-stat-pillar {
+            animation: statPillarEntrance 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+            will-change: transform, opacity;
+        }
+
+        .grade-badge-pulse {
+            animation: gradeBadgePop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        #semesterDetailsCard {
+            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s ease;
+            will-change: transform, opacity;
+        }
+
+        #detailSemCourses tr {
+            animation: fadeSlideUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .ui-button,
@@ -837,6 +1005,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+
             *,
             *::before,
             *::after {
@@ -937,7 +1106,9 @@
 
         /* ===== MAIN VIEW TRANSITIONS ===== */
         #calculatorView,
-        #semestersView {
+        #semestersView,
+        #timetableView,
+        #aboutView {
             transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
@@ -1023,7 +1194,8 @@
 
 <body class="bg-surface text-on-surface min-h-screen transition-colors duration-300">
     <!-- Intro / Loading Screen Overlay -->
-    <div id="introOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-background transition-opacity duration-500 cursor-pointer">
+    <div id="introOverlay"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-background transition-opacity duration-500 cursor-pointer">
         <div id="zabcal-intro" class="w-full h-full"></div>
     </div>
 
@@ -1042,21 +1214,34 @@
                     </span>
                 </span>
             </div>
-            <nav class="hidden md:flex items-center space-x-2">
-                <a class="flex items-center space-x-2 px-4 py-2.5 bg-primary/10 text-primary font-bold rounded-lg transition-all ui-button"
-                    data-nav-view="calculator" href="#calculator" onclick="window.uiManager.navigateTo('calculator'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">calculate</span>
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
+                <a class="flex items-center space-x-2 px-3.5 py-2 bg-primary/10 text-primary font-bold rounded-xl transition-all ui-button"
+                    data-nav-view="calculator" href="#calculator"
+                    onclick="window.uiManager.navigateTo('calculator'); return false;">
+                    <span class="material-symbols-outlined text-[18px]">calculate</span>
                     <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">Calculator</span>
                 </a>
-                <a class="flex items-center space-x-2 px-4 py-2.5 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-lg transition-all ui-button"
+                <a class="flex items-center space-x-2 px-3.5 py-2 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-xl transition-all ui-button"
+                    data-nav-view="semesters" href="#semesters"
+                    onclick="window.uiManager.navigateTo('semesters'); return false;">
+                    <span class="material-symbols-outlined text-[18px]">school</span>
+                    <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">Semesters</span>
+                </a>
+                <a class="flex items-center space-x-2 px-3.5 py-2 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-xl transition-all ui-button"
+                    data-nav-view="timetable" href="#timetable"
+                    onclick="window.uiManager.navigateTo('timetable'); return false;">
+                    <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                    <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">Timetable</span>
+                </a>
+                <a class="flex items-center space-x-2 px-3.5 py-2 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-xl transition-all ui-button"
                     data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span class="material-symbols-outlined text-[18px]">info</span>
                     <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">About</span>
                 </a>
             </nav>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
                 <button id="themeToggle"
-                    class="p-2 hover:bg-surface-container-low rounded-lg transition-all hover:scale-105"
+                    class="p-2 hover:bg-surface-container-low rounded-xl border border-transparent hover:border-outline-variant/20 transition-all hover:scale-105 active:scale-95"
                     title="Toggle Dark/Light Mode">
                     <svg class="icon-sun w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">
@@ -1090,57 +1275,70 @@
                         <h1
                             class="hero-title text-4xl sm:text-5xl md:text-6xl font-black text-primary tracking-tighter leading-none mb-4 sm:mb-6">
                             CGPA <br />Calculator.</h1>
-                        <p class="text-on-surface-variant text-base sm:text-lg max-w-sm leading-relaxed">Calculate your SZABIST CGPA & SGPA with ZabCal</p>
+                        <p class="text-on-surface-variant text-base sm:text-lg max-w-sm leading-relaxed">Calculate your
+                            SZABIST CGPA & SGPA with ZabCal</p>
                     </div>
                     <!-- Quick Stats Display (2x2 Grid on Mobile, Responsive on Desktop) -->
                     <div class="grid grid-cols-2 gap-2.5 sm:gap-4 w-full md:w-auto min-w-0 anim-fade-up-d1">
                         <div
-                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-primary-container text-on-primary flex flex-col items-center justify-center text-center shadow-md shadow-primary/10">
-                            <span class="text-[10px] sm:text-xs uppercase tracking-widest opacity-80 mb-0.5 sm:mb-1 font-bold">Cumulative
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-primary-container text-on-primary flex flex-col items-center justify-center text-center shadow-md shadow-primary/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/25 transition-all duration-300">
+                            <span
+                                class="text-[10px] sm:text-xs uppercase tracking-widest opacity-80 mb-0.5 sm:mb-1 font-bold">Cumulative
                                 GPA</span>
                             <span class="text-2xl sm:text-4xl font-black tracking-tight" id="cgpaValue">0.00</span>
                             <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium opacity-90">CGPA</span>
                         </div>
                         <div
-                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
-                            <span class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Total
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                            <span
+                                class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Total
                                 Credits</span>
-                            <span class="text-2xl sm:text-4xl font-black text-primary tracking-tight" id="creditsValue">0</span>
+                            <span class="text-2xl sm:text-4xl font-black text-primary tracking-tight"
+                                id="creditsValue">0</span>
                             <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium text-on-surface-variant"
                                 id="creditsInfo">remaining</span>
                         </div>
                         <div
-                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                             <span
                                 class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Academic
                                 Standing</span>
-                            <span class="text-base sm:text-2xl font-black text-primary leading-tight truncate max-w-full"
+                            <span
+                                class="text-base sm:text-2xl font-black text-primary leading-tight truncate max-w-full"
                                 id="standingValue">Freshman</span>
                             <span class="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium text-on-surface-variant"
                                 id="standingInfo">Level</span>
                         </div>
                         <div
-                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm">
+                            class="stat-card p-3 sm:p-5 md:p-6 rounded-2xl bg-surface-container-high border border-outline-variant/20 flex flex-col items-center justify-center text-center shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                             <span
                                 class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1 font-bold">Progress</span>
                             <span class="text-base sm:text-2xl font-black text-primary" id="progressInfo">0%</span>
-                            <div class="w-12 sm:w-16 h-1.5 bg-outline-variant/30 rounded-full mt-1.5 mb-1.5 overflow-hidden">
+                            <div
+                                class="w-12 sm:w-16 h-1.5 bg-outline-variant/30 rounded-full mt-1.5 mb-1.5 overflow-hidden">
                                 <div id="progressFill" class="h-full bg-primary transition-all duration-300"
                                     style="width: 0%"></div>
                             </div>
                             <div class="relative group cursor-help inline-flex items-center justify-center mt-0.5"
                                 id="coursesCompletedContainer"
                                 title="This only updates when you save a semester in the Semesters section.">
-                                <span class="text-[9px] sm:text-[10px] font-medium text-on-surface-variant tracking-tight flex items-center gap-1 text-center">
-                                    Completed: <strong class="text-primary font-bold" id="totalCoursesCompleted">0</strong>
-                                    <span class="material-symbols-outlined text-[12px] sm:text-[13px] text-on-surface-variant/70 group-hover:text-primary transition-colors">info</span>
+                                <span
+                                    class="text-[9px] sm:text-[10px] font-medium text-on-surface-variant tracking-tight flex items-center gap-1 text-center">
+                                    Completed Courses: <strong class="text-primary font-bold"
+                                        id="totalCoursesCompleted">0</strong>
+                                    <span
+                                        class="material-symbols-outlined text-[12px] sm:text-[13px] text-on-surface-variant/70 group-hover:text-primary transition-colors">info</span>
                                 </span>
                                 <!-- Hover Tooltip Box -->
-                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none w-44 sm:w-48 text-center">
-                                    <div class="bg-surface-container-highest text-on-surface text-[10px] font-semibold py-1.5 px-2.5 rounded-lg shadow-xl border border-outline-variant/30 leading-snug">
+                                <div
+                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none w-44 sm:w-48 text-center">
+                                    <div
+                                        class="bg-surface-container-highest text-on-surface text-[10px] font-semibold py-1.5 px-2.5 rounded-lg shadow-xl border border-outline-variant/30 leading-snug">
                                         This only updates when you save a semester in the Semesters section.
                                     </div>
-                                    <div class="w-2 h-2 bg-surface-container-highest border-r border-b border-outline-variant/30 rotate-45 -mt-1"></div>
+                                    <div
+                                        class="w-2 h-2 bg-surface-container-highest border-r border-b border-outline-variant/30 rotate-45 -mt-1">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1195,15 +1393,23 @@
                                 </div>
 
                                 <!-- Add Course Input Form -->
-                                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-4 mt-4 min-w-0">
-                                    <div class="flex-grow w-full md:w-auto autocomplete-container">
+                                <div
+                                    class="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-4 mt-4 min-w-0">
+                                    <div class="relative flex-grow w-full md:w-auto autocomplete-container">
                                         <input
-                                            class="w-full bg-transparent border border-outline-variant/50 rounded-xl px-4 py-3 sm:py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-medium text-on-surface"
+                                            class="w-full bg-transparent border border-outline-variant/50 rounded-xl px-4 py-3 sm:py-2.5 md:pr-14 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-medium text-on-surface"
                                             placeholder="Enter course code or name" type="text" id="courseCodeInput"
                                             autocomplete="off" />
-                                        <div class="autocomplete-suggestions" id="autocompleteSuggestions" data-lenis-prevent></div>
+                                        <div
+                                            class="hidden md:flex items-center absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <kbd
+                                                class="text-[10px] font-bold text-on-surface-variant/70 border border-outline-variant/40 rounded px-1.5 py-0.5 bg-surface-container-high/80 shadow-xs">⌘K</kbd>
+                                        </div>
+                                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"
+                                            data-lenis-prevent></div>
                                     </div>
-                                    <div class="grid grid-cols-2 md:flex md:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
+                                    <div
+                                        class="grid grid-cols-2 md:flex md:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
                                         <div class="w-full md:w-32">
                                             <input
                                                 class="w-full bg-transparent border border-outline-variant/50 rounded-xl px-4 py-3 sm:py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-bold text-on-surface text-center md:text-left"
@@ -1220,8 +1426,11 @@
                                 </div>
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
                                     <p class="text-[11px] text-on-surface-variant/80 flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-[15px] text-primary">tips_and_updates</span>
-                                        <span>Tip: Search by code, name, or type <span class="font-bold text-on-surface">"Elective"</span> to explore Domain & University electives.</span>
+                                        <span
+                                            class="material-symbols-outlined text-[15px] text-primary">tips_and_updates</span>
+                                        <span>Tip: Search by code, name, or type <span
+                                                class="font-bold text-on-surface">"Elective"</span> to explore Domain &
+                                            University electives.</span>
                                     </p>
                                     <button
                                         class="self-end bg-[#ba1a1a] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#93000a] hover:shadow-lg transition-all shadow-sm hidden"
@@ -1231,7 +1440,8 @@
                                 </div>
 
                                 <!-- Desktop Course Table (sm and above) -->
-                                <div class="mt-6 border border-outline-variant/20 rounded-xl overflow-hidden hidden sm:block">
+                                <div
+                                    class="mt-6 border border-outline-variant/20 rounded-xl overflow-hidden hidden sm:block">
                                     <div class="overflow-x-auto max-w-full overscroll-x-contain">
                                         <table class="w-full min-w-[700px] text-left border-collapse whitespace-nowrap">
                                             <thead class="bg-[#27187E] text-white text-xs uppercase tracking-wider">
@@ -1259,7 +1469,8 @@
 
                                 <!-- Mobile Course Cards List (< sm) -->
                                 <div id="coursesMobileList" class="mt-4 sm:hidden flex flex-col gap-2.5">
-                                    <div class="empty-mobile-courses p-6 text-center text-xs font-medium text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center gap-2">
+                                    <div
+                                        class="empty-mobile-courses p-6 text-center text-xs font-medium text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center gap-2">
                                         <span class="material-symbols-outlined text-3xl text-primary">menu_book</span>
                                         <p>No courses added. Add a course to get started.</p>
                                     </div>
@@ -1275,17 +1486,23 @@
                         </h4>
                         <div class="grid grid-cols-3 gap-2 sm:gap-4">
                             <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
-                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">Credits
+                                <p
+                                    class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">
+                                    Credits
                                 </p>
                                 <p class="text-lg sm:text-2xl font-black text-primary" id="semesterTotalCredits">0</p>
                             </div>
                             <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
-                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">Points
+                                <p
+                                    class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">
+                                    Points
                                 </p>
                                 <p class="text-lg sm:text-2xl font-black text-primary" id="semesterGradePoints">0.00</p>
                             </div>
                             <div class="p-2.5 sm:p-4 bg-surface-container-highest rounded-lg text-center sm:text-left">
-                                <p class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">SGPA</p>
+                                <p
+                                    class="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant mb-0.5 sm:mb-1">
+                                    SGPA</p>
                                 <p class="text-lg sm:text-2xl font-black text-primary" id="semesterGPA">0.00</p>
                             </div>
                         </div>
@@ -1372,7 +1589,8 @@
                             </div>
 
                             <div id="miniSemestersList"
-                                class="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[250px] pr-2" data-lenis-prevent>
+                                class="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[250px] pr-2"
+                                data-lenis-prevent>
                                 <!-- Minified semester cards appended here by JS -->
                                 <div class="flex flex-col items-center justify-center h-full opacity-50">
                                     <span class="material-symbols-outlined text-3xl mb-2">school</span>
@@ -1437,9 +1655,13 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-on-surface-variant">
-                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
-                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        <p
+                            class="text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 flex-wrap">
+                            <span>Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                    class="text-primary font-bold hover:underline">Wasiq</a></span>
+                            <span class="text-outline-variant/40">•</span>
+                            <span class="text-xs text-on-surface-variant/80">© <span class="current-year">2026</span>
+                                ZabCal</span>
                         </p>
                     </div>
                     <div class="text-center">
@@ -1454,110 +1676,154 @@
         <!-- Semesters View -->
         <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen hidden" id="semestersView">
             <div class="max-w-6xl mx-auto">
-                <div class="flex items-center gap-4 mb-8">
-                    <button id="btnBackToCalc"
-                        class="p-2 hover:bg-surface-container-low rounded-lg transition-all hover:scale-105 text-outline-variant hover:text-primary">
-                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
-                    </button>
-                    <div>
-                        <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Your Semesters</h2>
-                        <p class="text-sm font-medium text-on-surface-variant mt-1">Track and manage your academic
-                            history</p>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div class="flex items-center gap-4">
+                        <button id="btnBackToCalc"
+                            class="p-2 hover:bg-surface-container-low rounded-xl transition-all hover:scale-105 text-outline-variant hover:text-primary">
+                            <span class="material-symbols-outlined text-2xl">arrow_back</span>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Your Semesters
+                            </h2>
+                            <p class="text-sm font-medium text-on-surface-variant mt-0.5">Track and manage your academic
+                                history</p>
+                        </div>
                     </div>
+                    <button onclick="document.getElementById('openAddSemesterModal')?.click()"
+                        class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container shadow-md transition-all active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        <span>Add Semester</span>
+                    </button>
                 </div>
 
                 <div id="semestersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Semesters rendered here -->
                 </div>
 
-                <!-- Semester Details View -->
+                <!-- Semester Details Pop-Up Modal (Clean Centered Modal) -->
                 <div id="semesterDetailsView"
-                    class="hidden mt-8 bg-surface-container rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-outline-variant/20 shadow-2xl transition-all">
-                    <!-- Details Header -->
-                    <div class="flex items-start justify-between gap-3 mb-6">
-                        <div class="min-w-0 flex-1">
-                            <h3 id="detailSemTitle" class="text-lg sm:text-2xl font-black text-on-surface tracking-tight break-words">
-                                Fall 2025 (Semester 1)
-                            </h3>
-                            <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-2.5">
-                                <div class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[15px]">stars</span>
-                                    <span>SGPA: <strong id="detailSemGPA" class="font-black">0.00</strong></span>
+                    class="hidden fixed inset-0 z-[100] bg-[#07080e]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 transition-opacity duration-250 ease-out">
+
+                    <div id="semesterDetailsCard"
+                        class="w-full max-w-2xl max-h-[85vh] bg-surface-container rounded-3xl p-4 sm:p-6 border border-outline-variant/20 shadow-2xl flex flex-col overflow-hidden transform scale-100 opacity-100">
+
+                        <!-- Details Header -->
+                        <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span id="detailSemBadge"
+                                        class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Semester</span>
                                 </div>
-                                <div class="px-2.5 py-1 rounded-full bg-surface-container-highest border border-outline-variant/20 text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[15px]">school</span>
-                                    <span>Credits: <strong id="detailSemCredits" class="font-black text-on-surface">0</strong></span>
-                                </div>
-                                <div id="detailSemCoursesCountBadge" class="px-2.5 py-1 rounded-full bg-surface-container-highest border border-outline-variant/20 text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[15px]">menu_book</span>
-                                    <span><strong id="detailSemCoursesCount" class="font-black text-on-surface">0</strong> Courses</span>
-                                </div>
+                                <h3 id="detailSemTitle"
+                                    class="text-lg sm:text-2xl font-black text-on-surface tracking-tight break-words">
+                                    Fall 2025 (Semester 1)
+                                </h3>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0 pt-0.5">
+                                <button id="btnEditSemMarks"
+                                    class="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm active:scale-95"
+                                    title="Edit course marks in this semester">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                    <span class="hidden xs:inline">Edit Marks</span>
+                                </button>
+                                <button id="btnCloseDetails"
+                                    class="p-2 sm:p-2.5 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant hover:text-on-surface shrink-0 hover:rotate-90 hover:scale-105 active:scale-95 bg-surface-container-high/60 sm:bg-transparent duration-200 cursor-pointer"
+                                    title="Close details">
+                                    <span class="material-symbols-outlined text-xl">close</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button id="btnEditSemMarks"
-                                class="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1 text-xs shadow-sm active:scale-95"
-                                title="Edit course marks in this semester">
-                                <span class="material-symbols-outlined text-base">edit</span>
-                                <span>Edit Marks</span>
-                            </button>
-                            <button id="btnCloseDetails"
-                                class="p-2 sm:p-2.5 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant hover:text-on-surface shrink-0 hover:scale-105 active:scale-95 bg-surface-container-high sm:bg-transparent"
-                                title="Close details">
-                                <span class="material-symbols-outlined text-xl">close</span>
+
+                        <!-- Compact 3-Pillar Metrics Row with Animated Entrance -->
+                        <div
+                            class="grid grid-cols-3 gap-2 my-2 sm:my-3 p-2.5 bg-surface-container-low rounded-2xl border border-outline-variant/15 shrink-0">
+                            <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
+                                style="animation-delay: 90ms;">
+                                <span
+                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-primary">stars</span> SGPA
+                                </span>
+                                <strong id="detailSemGPA"
+                                    class="text-base sm:text-lg font-black text-primary mt-0.5">0.00</strong>
+                            </div>
+                            <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
+                                style="animation-delay: 150ms;">
+                                <span
+                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-primary">school</span>
+                                    Credits
+                                </span>
+                                <strong id="detailSemCredits"
+                                    class="text-base sm:text-lg font-black text-on-surface mt-0.5">0</strong>
+                            </div>
+                            <div id="detailSemCoursesCountBadge"
+                                class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
+                                style="animation-delay: 210ms;">
+                                <span
+                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-primary">menu_book</span>
+                                    Courses
+                                </span>
+                                <strong id="detailSemCoursesCount"
+                                    class="text-base sm:text-lg font-black text-on-surface mt-0.5">0</strong>
+                            </div>
+                        </div>
+
+                        <!-- Edit Marks Active Action Bar -->
+                        <div id="semEditActionBar"
+                            class="hidden mb-3 p-3 bg-primary/10 border border-primary/25 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+                            <div class="flex items-center gap-2 text-xs font-bold text-primary">
+                                <span class="material-symbols-outlined text-lg">edit_note</span>
+                                <span>Editing marks. SGPA recalculates live.</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="btnCancelEditMarks" type="button"
+                                    class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-bold rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-all text-on-surface cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button id="btnSaveEditMarks" type="button"
+                                    class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-black rounded-xl bg-primary text-white hover:bg-primary-container shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+                                    <span class="material-symbols-outlined text-base">check</span> Save Changes
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Table View (sm and above) with Smooth Isolated Touch Scroll -->
+                        <div class="hidden sm:block overflow-y-auto max-h-[46vh] pr-1" data-lenis-prevent>
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20">
+                                        <th class="pb-3 font-bold">Course</th>
+                                        <th class="pb-3 font-bold text-center">Credits</th>
+                                        <th class="pb-3 font-bold text-center">Marks</th>
+                                        <th class="pb-3 font-bold text-right">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailSemCourses"
+                                    class="text-sm font-medium divide-y divide-outline-variant/10">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards List (< sm) with Smooth Isolated Touch Scroll -->
+                        <div id="detailSemCoursesMobile"
+                            class="sm:hidden flex flex-col gap-2.5 overflow-y-auto max-h-[48vh] pr-0.5 overscroll-contain"
+                            data-lenis-prevent>
+                        </div>
+
+                        <!-- Details Footer -->
+                        <div
+                            class="mt-3 pt-3 border-t border-outline-variant/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+                            <p class="text-[11px] text-on-surface-variant font-medium text-center sm:text-left">
+                                Showing all recorded courses for this semester.
+                            </p>
+                            <button id="btnDeleteSemester"
+                                class="bg-error/10 text-error hover:bg-error/20 border border-error/20 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs shadow-sm active:scale-95">
+                                <span class="material-symbols-outlined text-sm">delete</span> Delete Semester
                             </button>
                         </div>
-                    </div>
 
-                    <!-- Edit Marks Active Action Bar -->
-                    <div id="semEditActionBar"
-                        class="hidden mb-4 p-3.5 bg-primary/10 border border-primary/25 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-2 text-xs font-bold text-primary">
-                            <span class="material-symbols-outlined text-lg">edit_note</span>
-                            <span>Editing marks. Grades and SGPA recalculate in real-time.</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button id="btnCancelEditMarks" type="button"
-                                class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-bold rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-all text-on-surface">
-                                Cancel
-                            </button>
-                            <button id="btnSaveEditMarks" type="button"
-                                class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-black rounded-xl bg-primary text-white hover:bg-primary-container shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                                <span class="material-symbols-outlined text-base">check</span> Save Changes
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Desktop Table View (sm and above) -->
-                    <div class="hidden sm:block overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr
-                                    class="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20">
-                                    <th class="pb-3 font-bold">Course</th>
-                                    <th class="pb-3 font-bold text-center">Credits</th>
-                                    <th class="pb-3 font-bold text-center">Marks</th>
-                                    <th class="pb-3 font-bold text-right">Grade</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detailSemCourses" class="text-sm font-medium divide-y divide-outline-variant/10">
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Mobile Cards List (< sm) -->
-                    <div id="detailSemCoursesMobile" class="sm:hidden flex flex-col gap-2.5">
-                    </div>
-
-                    <!-- Details Footer -->
-                    <div class="mt-6 pt-4 border-t border-outline-variant/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                        <p class="text-xs text-on-surface-variant font-medium text-center sm:text-left">
-                            Showing all recorded courses for this semester.
-                        </p>
-                        <button id="btnDeleteSemester"
-                            class="bg-error/10 text-error hover:bg-error/20 border border-error/20 px-4 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm shadow-sm active:scale-95">
-                            <span class="material-symbols-outlined text-base">delete</span> Delete Semester
-                        </button>
                     </div>
                 </div>
 
@@ -1565,14 +1831,252 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-on-surface-variant">
-                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
-                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        <p
+                            class="text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 flex-wrap">
+                            <span>Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                    class="text-primary font-bold hover:underline">Wasiq</a></span>
+                            <span class="text-outline-variant/40">•</span>
+                            <span class="text-xs text-on-surface-variant/80">© <span class="current-year">2026</span>
+                                ZabCal</span>
                         </p>
                     </div>
                     <div class="text-center">
                         <p class="text-[11px] text-on-surface-variant/70 font-medium tracking-tight">
                             All calculations run locally in your browser. No data is sent to any server.
+                        </p>
+                    </div>
+                </footer>
+            </div>
+        </main>
+
+        <!-- Timetable View -->
+        <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen hidden" id="timetableView">
+            <div class="max-w-6xl mx-auto">
+                <!-- Timetable Header Bar -->
+                <div class="flex items-start gap-4 mb-6 sm:mb-8 anim-fade-up">
+                    <button onclick="window.uiManager.navigateTo('calculator')"
+                        class="ui-button p-2 hover:bg-surface-container-low rounded-xl text-outline-variant hover:text-primary transition-all hover:scale-105 shrink-0 mt-1"
+                        title="Back to Calculator">
+                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span
+                                class="text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-black text-primary">Academic
+                                Schedule</span>
+                            <span class="text-outline-variant/40 text-xs">•</span>
+                            <span id="timetableSessionBadge"
+                                class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Fall
+                                2026</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Timetable</h2>
+                        <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                            <p class="text-sm font-medium text-on-surface-variant">Class timings, teacher
+                                assignments, and lecture venues.</p>
+                            <span class="hidden sm:inline text-outline-variant/40">•</span>
+                            <span id="timetableLastUpdatedBadge"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-bold border border-outline-variant/25">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>Updated: <span id="timetableLastUpdatedText">September 8, 2026</span></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Toolbar: Section Selector, Search & View Switcher -->
+                <div
+                    class="glass-panel p-4 sm:p-5 rounded-2xl border border-outline-variant/20 shadow-sm mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                        <!-- Section Dropdown -->
+                        <div class="relative min-w-[200px] sm:w-60">
+                            <label
+                                class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">Select
+                                Section</label>
+                            <div class="relative">
+                                <select id="sectionSelector"
+                                    class="w-full appearance-none bg-surface-container-high border border-outline-variant/30 text-on-surface text-sm font-bold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+                                    <option value="" disabled selected>Choose Section</option>
+                                </select>
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Search Input -->
+                        <div class="relative flex-1">
+                            <label
+                                class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">Search
+                                Schedule</label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg pointer-events-none">search</span>
+                                <input type="text" id="timetableSearchInput"
+                                    placeholder="Filter by course, teacher, or venue..."
+                                    class="w-full bg-surface-container-high border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant/60 text-sm font-medium rounded-xl pl-10 pr-9 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                                <button id="btnClearTimetableSearch"
+                                    class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                                    <span class="material-symbols-outlined text-base">close</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Mode Toggle (Interactive vs PDF Preview) -->
+                    <div class="flex flex-col sm:items-end gap-1 shrink-0">
+                        <label
+                            class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">View
+                            Mode</label>
+                        <div
+                            class="inline-flex p-1 bg-surface-container-high rounded-xl border border-outline-variant/20 self-start sm:self-auto">
+                            <button id="btnViewModeInteractive"
+                                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer">
+                                <span class="material-symbols-outlined text-base">dashboard</span>
+                                <span>Interactive</span>
+                            </button>
+                            <button id="btnViewModePDF"
+                                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer">
+                                <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                                <span>PDF Document</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4-Pillar Schedule Overview Metrics -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="timetableMetricsGrid">
+                    <div
+                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="material-symbols-outlined text-primary text-lg">calendar_today</span>
+                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Active
+                                Days</span>
+                        </div>
+                        <p id="metricActiveDays" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">-
+                        </p>
+                    </div>
+                    <div
+                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="material-symbols-outlined text-primary text-lg">schedule</span>
+                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Total
+                                Sessions</span>
+                        </div>
+                        <p id="metricTotalSessions" class="text-xl sm:text-2xl font-black text-primary tracking-tight">-
+                        </p>
+                    </div>
+                    <div
+                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="material-symbols-outlined text-primary text-lg">school</span>
+                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Credit
+                                Hours</span>
+                        </div>
+                        <p id="metricCreditHours" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">
+                            -</p>
+                    </div>
+                    <div
+                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="material-symbols-outlined text-primary text-lg">meeting_room</span>
+                            <span
+                                class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Venues</span>
+                        </div>
+                        <p id="metricVenuesCount" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">
+                            -</p>
+                    </div>
+                </div>
+
+                <!-- VIEW MODE 1: INTERACTIVE SCHEDULE VIEW -->
+                <div id="timetableInteractiveView" class="hidden space-y-6">
+                    <!-- Day Filter Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="timetableDayTabs">
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-primary text-white shadow-sm shrink-0 cursor-pointer"
+                            data-day="ALL">
+                            All Days
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Monday">
+                            Monday
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Tuesday">
+                            Tuesday
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Wednesday">
+                            Wednesday
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Thursday">
+                            Thursday
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Friday">
+                            Friday
+                        </button>
+                        <button
+                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            data-day="Saturday">
+                            Saturday
+                        </button>
+                    </div>
+
+                    <!-- Interactive Day Groups Container -->
+                    <div id="timetableCardsContainer" class="space-y-6">
+                        <!-- Populated dynamically via renderInteractiveTimetable -->
+                    </div>
+                </div>
+
+                <!-- VIEW MODE 2: PDF DOCUMENT PREVIEW -->
+                <div id="timetableDocPreviewView" class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
+                        <div>
+                            <p class="text-xs sm:text-sm font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-base text-primary">visibility</span>
+                                Print & Document Preview (A4 Landscape)
+                            </p>
+                            <span class="text-[11px] text-on-surface-variant/70">Exact preview of the printable schedule. Print directly or save as vector PDF.</span>
+                        </div>
+                        <button id="btnPrintTimetable"
+                            class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-primary-container shadow-md transition-all active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
+                            title="Print Timetable (Save as PDF)">
+                            <span class="material-symbols-outlined text-lg">print</span>
+                            <span>Print Timetable</span>
+                        </button>
+                    </div>
+
+                    <!-- Scrollable Container for PDF Canvas -->
+                    <div class="bg-surface-container rounded-3xl p-3 sm:p-6 border border-outline-variant/30 shadow-sm overflow-x-auto"
+                        data-lenis-prevent>
+                        <div id="timetableExportArea"
+                            class="min-w-[850px] max-w-[1000px] bg-white text-black p-8 rounded-xl shadow-[0_0_25px_rgba(0,0,0,0.08)] mx-auto relative overflow-hidden">
+                            <!-- Dynamic PDF layout injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timetable Footer -->
+                <footer
+                    class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
+                    <div class="mb-8 text-center">
+                        <p
+                            class="text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 flex-wrap">
+                            <span>Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                    class="text-primary font-bold hover:underline">Wasiq</a></span>
+                            <span class="text-outline-variant/40">•</span>
+                            <span class="text-xs text-on-surface-variant/80">© <span class="current-year">2026</span>
+                                ZabCal</span>
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[11px] text-on-surface-variant/70 font-medium tracking-tight">
+                            Official SZABIST academic timetables. All data processed directly in your browser.
                         </p>
                     </div>
                 </footer>
@@ -1588,55 +2092,78 @@
                         <span class="material-symbols-outlined text-2xl">arrow_back</span>
                     </button>
                     <div>
-                        <p class="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] font-black text-primary mb-1">About</p>
+                        <p class="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] font-black text-primary mb-1">
+                            About</p>
                         <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">About ZabCal</h2>
                     </div>
                 </div>
 
-                <div id="aboutHeroCard" class="glass-panel rounded-[2rem] p-5 sm:p-8 md:p-10 border border-primary/10 shadow-xl shadow-primary/5 anim-fade-up overflow-hidden relative">
-                    <div class="absolute inset-x-0 top-0 h-40 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none"></div>
+                <div id="aboutHeroCard"
+                    class="glass-panel rounded-[2rem] p-5 sm:p-8 md:p-10 border border-primary/10 shadow-xl shadow-primary/5 anim-fade-up overflow-hidden relative">
+                    <div
+                        class="absolute inset-x-0 top-0 h-40 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none">
+                    </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 lg:gap-8 items-start relative">
                         <section class="space-y-6">
                             <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-primary-container rounded-3xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
+                                <div
+                                    class="w-20 h-20 sm:w-24 sm:h-24 bg-primary-container rounded-3xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
                                     <span class="material-symbols-outlined text-4xl sm:text-5xl">person</span>
                                 </div>
                                 <div>
-                                    <p class="text-[10px] uppercase tracking-[0.3em] font-black text-primary mb-2">Built for SZABIST Students</p>
-                                    <h3 class="text-2xl sm:text-3xl font-black text-primary leading-tight">Hi, I’m Wasiq.</h3>
-                                    <p class="text-sm sm:text-base text-on-surface-variant mt-2 max-w-2xl leading-relaxed">
-                                        I built ZabCal because I wanted a fast, local-first CGPA and SGPA calculator that feels simple on mobile and clean on desktop.
+                                    <p class="text-[10px] uppercase tracking-[0.3em] font-black text-primary mb-2">Built
+                                        for SZABIST Students</p>
+                                    <h3 class="text-2xl sm:text-3xl font-black text-primary leading-tight">Hi, I’m
+                                        Wasiq.</h3>
+                                    <p
+                                        class="text-sm sm:text-base text-on-surface-variant mt-2 max-w-2xl leading-relaxed">
+                                        I built ZabCal because I wanted a fast, local-first CGPA and SGPA calculator
+                                        that feels simple on mobile and clean on desktop.
                                     </p>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
-                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Local First</p>
+                                    <p
+                                        class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                                        Local First</p>
                                     <p class="text-sm font-bold text-on-surface">Everything stays in your browser.</p>
                                 </div>
                                 <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
-                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Semester Tracking</p>
+                                    <p
+                                        class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                                        Semester Tracking</p>
                                     <p class="text-sm font-bold text-on-surface">Save SGPA history per term.</p>
                                 </div>
                                 <div class="bg-surface-container-high rounded-2xl p-4 border border-outline-variant/20">
-                                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">Mobile Ready</p>
-                                    <p class="text-sm font-bold text-on-surface">Designed to work smoothly on small screens.</p>
+                                    <p
+                                        class="text-[10px] uppercase tracking-widest text-on-surface-variant font-black mb-1">
+                                        Mobile Ready</p>
+                                    <p class="text-sm font-bold text-on-surface">Designed to work smoothly on small
+                                        screens.</p>
                                 </div>
                             </div>
 
-                            <div class="bg-surface-container-low rounded-2xl p-5 sm:p-6 border border-outline-variant/20">
-                                <p class="text-xs font-black uppercase tracking-[0.25em] text-primary mb-3">Why this exists</p>
+                            <div
+                                class="bg-surface-container-low rounded-2xl p-5 sm:p-6 border border-outline-variant/20">
+                                <p class="text-xs font-black uppercase tracking-[0.25em] text-primary mb-3">Why this
+                                    exists</p>
                                 <div class="space-y-4 text-sm sm:text-base text-on-surface-variant leading-relaxed">
-                                    <p>There wasn’t a dedicated tool that felt quick enough for everyday course entry, so ZabCal was built to keep calculations readable, accurate, and low-friction.</p>
-                                    <p>The goal is practical: help students check CGPA, SGPA, semester history, and progress without losing time to clutter or manual calculations.</p>
-                                    <div class="pt-4 border-t border-outline-variant/20 mt-4 flex items-center justify-between">
-                                        <span class="text-xs font-bold text-primary cursor-pointer hover:text-primary-container transition-all flex items-center gap-1 group" onclick="showVersionDetails()">
-                                            Version 2.1 <span class="material-symbols-outlined text-[14px] transition-transform group-hover:rotate-12">info</span>
+                                    <p>There wasn’t a dedicated tool that felt quick enough for everyday course entry,
+                                        so ZabCal was built to keep calculations readable, accurate, and low-friction.
+                                    </p>
+                                    <p>The goal is practical: help students check CGPA, SGPA, semester history, and
+                                        progress without losing time to clutter or manual calculations.</p>
+                                    <div
+                                        class="pt-4 border-t border-outline-variant/20 mt-4 flex items-center justify-between">
+                                        <span
+                                            class="text-xs font-bold text-primary cursor-pointer hover:text-primary-container transition-all flex items-center gap-1 group"
+                                            onclick="showVersionDetails()">
+                                            Version 2.1 <span
+                                                class="material-symbols-outlined text-[14px] transition-transform group-hover:rotate-12">info</span>
                                         </span>
-                                    </div>
-                                        </span
                                     </div>
                                 </div>
                             </div>
@@ -1644,13 +2171,18 @@
 
                         <aside class="space-y-4">
                             <div class="bg-surface-container rounded-3xl p-5 border border-outline-variant/20">
-                                <h4 class="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Quick Links</h4>
+                                <h4 class="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-4">Quick
+                                    Links</h4>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <a href="https://github.com/Wasiq2006" target="_blank" rel="noopener noreferrer"
                                         class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
-                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
-                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                        <div
+                                            class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path
+                                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                                                </path>
                                             </svg>
                                         </div>
                                         <div class="text-left">
@@ -1660,9 +2192,13 @@
                                     </a>
                                     <a href="mailto:wasiqmansoor2006@gmail.com"
                                         class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
-                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
-                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                        <div
+                                            class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path
+                                                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                                </path>
                                                 <polyline points="22,6 12,13 2,6"></polyline>
                                             </svg>
                                         </div>
@@ -1671,11 +2207,16 @@
                                             <p class="text-[11px] text-on-surface-variant">Questions or feedback</p>
                                         </div>
                                     </a>
-                                    <a href="https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a" target="_blank" rel="noopener noreferrer"
+                                    <a href="https://www.linkedin.com/in/muhammad-wasiq-mansoor-35332927a"
+                                        target="_blank" rel="noopener noreferrer"
                                         class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
-                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
-                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                                        <div
+                                            class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path
+                                                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z">
+                                                </path>
                                                 <rect x="2" y="9" width="4" height="12"></rect>
                                                 <circle cx="4" cy="4" r="2"></circle>
                                             </svg>
@@ -1687,8 +2228,10 @@
                                     </a>
                                     <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
                                         class="ui-card-link flex items-center gap-4 p-4 bg-surface-container-high rounded-2xl border border-outline-variant/30 hover:border-primary hover:bg-primary/5 group hover:shadow-md transition-all">
-                                        <div class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
-                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <div
+                                            class="w-10 h-10 bg-surface-container text-on-surface border border-outline-variant/20 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="4 17 10 11 4 5"></polyline>
                                                 <line x1="12" y1="19" x2="20" y2="19"></line>
                                             </svg>
@@ -1701,11 +2244,15 @@
                                 </div>
                             </div>
 
-                            <div class="bg-primary-container text-white rounded-3xl p-5 sm:p-6 shadow-lg shadow-primary/20">
-                                <p class="text-[10px] uppercase tracking-[0.25em] font-black text-white/80 mb-3">Project Values</p>
+                            <div
+                                class="bg-primary-container text-white rounded-3xl p-5 sm:p-6 shadow-lg shadow-primary/20">
+                                <p class="text-[10px] uppercase tracking-[0.25em] font-black text-white/80 mb-3">Project
+                                    Values</p>
                                 <div class="space-y-3 text-sm text-white/90 leading-relaxed">
-                                    <p><span class="font-bold text-white">Fast:</span> fewer clicks, cleaner navigation.</p>
-                                    <p><span class="font-bold text-white">Accurate:</span> grading rules and semester math stay aligned.</p>
+                                    <p><span class="font-bold text-white">Fast:</span> fewer clicks, cleaner navigation.
+                                    </p>
+                                    <p><span class="font-bold text-white">Accurate:</span> grading rules and semester
+                                        math stay aligned.</p>
                                     <p><span class="font-bold text-white">Private:</span> your data stays local.</p>
                                 </div>
                             </div>
@@ -1717,9 +2264,13 @@
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
                     <div class="mb-8 text-center">
-                        <p class="text-sm font-medium text-on-surface-variant">
-                            Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
-                                class="text-primary font-bold hover:underline">Wasiq</a>
+                        <p
+                            class="text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 flex-wrap">
+                            <span>Made by <a href="https://www.wasiq.tech" target="_blank" rel="noopener noreferrer"
+                                    class="text-primary font-bold hover:underline">Wasiq</a></span>
+                            <span class="text-outline-variant/40">•</span>
+                            <span class="text-xs text-on-surface-variant/80">© <span class="current-year">2026</span>
+                                ZabCal</span>
                         </p>
                     </div>
                     <div class="text-center">
@@ -1732,17 +2283,26 @@
         </main>
 
         <!-- Mobile Bottom Navigation -->
-        <nav id="mobileBottomNav" class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-3 py-2 safe-bottom">
-            <div class="grid grid-cols-3 gap-2 max-w-md mx-auto">
+        <nav id="mobileBottomNav"
+            class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-2 py-2 safe-bottom">
+            <div class="grid grid-cols-4 gap-1 max-w-md mx-auto">
                 <a class="flex flex-col items-center justify-center py-2 rounded-xl bg-primary/10 text-primary font-bold transition-all active"
-                    data-nav-view="calculator" href="#calculator" onclick="window.uiManager.navigateTo('calculator'); return false;">
+                    data-nav-view="calculator" href="#calculator"
+                    onclick="window.uiManager.navigateTo('calculator'); return false;">
                     <span class="material-symbols-outlined text-[20px]">calculate</span>
-                    <span class="text-[10px] uppercase tracking-wider">Calculator</span>
+                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Calc</span>
                 </a>
                 <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
-                    data-nav-view="semesters" href="#semesters" onclick="window.uiManager.navigateTo('semesters'); return false;">
+                    data-nav-view="semesters" href="#semesters"
+                    onclick="window.uiManager.navigateTo('semesters'); return false;">
                     <span class="material-symbols-outlined text-[20px]">school</span>
-                    <span class="text-[10px] uppercase tracking-wider">Semesters</span>
+                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Semesters</span>
+                </a>
+                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                    data-nav-view="timetable" href="#timetable"
+                    onclick="window.uiManager.navigateTo('timetable'); return false;">
+                    <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Timetable</span>
                 </a>
                 <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
                     data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
@@ -1829,13 +2389,15 @@
                     <div id="semRepeatedCoursesNotice"
                         class="hidden p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex flex-col gap-1.5">
                         <div class="flex items-center gap-1.5 font-bold">
-                            <span class="material-symbols-outlined text-sm text-amber-600 dark:text-amber-400">repeat</span>
+                            <span
+                                class="material-symbols-outlined text-sm text-amber-600 dark:text-amber-400">repeat</span>
                             <span>Repeating Course(s) Detected</span>
                         </div>
                         <p class="text-[11px] text-on-surface-variant leading-snug">
                             This semester contains repeating course(s):
                         </p>
-                        <ul id="semRepeatedCoursesList" class="list-disc list-inside text-[11px] font-semibold space-y-1 mt-0.5">
+                        <ul id="semRepeatedCoursesList"
+                            class="list-disc list-inside text-[11px] font-semibold space-y-1 mt-0.5">
                         </ul>
                     </div>
 
@@ -1861,19 +2423,23 @@
                 <div class="space-y-4 text-sm text-on-surface-variant leading-relaxed">
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Theme:</span>
-                        <p>Overhauled dark theme on mobile & desktop with modern glassmorphism, crisp contrast, and refined surfaces.</p>
+                        <p>Overhauled dark theme on mobile & desktop with modern glassmorphism, crisp contrast, and
+                            refined surfaces.</p>
                     </div>
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Mobile UI:</span>
-                        <p>Replaced wide tables with native mobile course cards, 2x2 Quick Stats grid, and touch-optimized bottom navigation.</p>
+                        <p>Replaced wide tables with native mobile course cards, 2x2 Quick Stats grid, and
+                            touch-optimized bottom navigation.</p>
                     </div>
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Electives:</span>
-                        <p>Added 180+ Domain & University Electives for CS, SE, AI, and BBA with program-specific filtering.</p>
+                        <p>Added 180+ Domain & University Electives for CS, SE, AI, and BBA with program-specific
+                            filtering.</p>
                     </div>
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Grading:</span>
-                        <p>Enforced SZABIST Grade Replacement policy: Repeated courses count highest attempt in CGPA and credits once.</p>
+                        <p>Enforced SZABIST Grade Replacement policy: Repeated courses count highest attempt in CGPA and
+                            credits once.</p>
                     </div>
                     <div class="flex gap-3">
                         <span class="text-primary font-bold">Editing:</span>
@@ -1889,12 +2455,15 @@
     <script src="lenis.min.js"></script>
     <script>
         if (typeof Lenis === 'undefined') {
-            document.write('<script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"><\\/script>');
+            const lenisFallback = document.createElement('script');
+            lenisFallback.src = 'https://unpkg.com/lenis@1.1.20/dist/lenis.min.js';
+            document.head.appendChild(lenisFallback);
         }
     </script>
     <script src="Animation.js?v=1"></script>
+    <script src="timetableData.js?v=2"></script>
     <script src="database.js?v=5"></script>
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=12"></script>
 </body>
 
 </html>

@@ -15,6 +15,37 @@ const GRADING_POLICY = {
     0: { grade: 'F', gpa: 0.0 }
 };
 
+function getGradeBadgeStyle(grade) {
+    if (!grade || grade === '-') {
+        return {
+            badge: 'bg-surface-container-highest text-on-surface-variant/70 border border-outline-variant/30',
+            dot: 'bg-outline-variant'
+        };
+    }
+    if (grade.startsWith('A')) {
+        return {
+            badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
+            dot: 'bg-emerald-500'
+        };
+    }
+    if (grade.startsWith('B')) {
+        return {
+            badge: 'bg-primary/15 text-primary border border-primary/30',
+            dot: 'bg-primary'
+        };
+    }
+    if (grade.startsWith('C')) {
+        return {
+            badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30',
+            dot: 'bg-amber-500'
+        };
+    }
+    return {
+        badge: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30',
+        dot: 'bg-rose-500'
+    };
+}
+
 // ============================================
 // LOCAL STORAGE & STATE
 // ============================================
@@ -22,6 +53,7 @@ const GRADING_POLICY = {
 class StateManager {
     constructor() {
         this.storageKey = 'szabist-cgpa-session';
+        this.schemaVersion = 2;
         this.state = this.loadFromStorage();
     }
 
@@ -29,7 +61,16 @@ class StateManager {
         const stored = localStorage.getItem(this.storageKey);
         if (stored) {
             try {
-                return JSON.parse(stored);
+                const parsed = JSON.parse(stored);
+                if (parsed && typeof parsed === 'object') {
+                    return {
+                        schemaVersion: this.schemaVersion,
+                        program: typeof parsed.program === 'string' ? parsed.program : '',
+                        courses: Array.isArray(parsed.courses) ? parsed.courses : [],
+                        theme: parsed.theme === 'dark' || parsed.theme === 'light' ? parsed.theme : this.getSystemTheme(),
+                        semesters: parsed.semesters && typeof parsed.semesters === 'object' ? parsed.semesters : {}
+                    };
+                }
             } catch (e) {
                 console.error('Error parsing stored state:', e);
                 return this.getDefaultState();
@@ -40,6 +81,7 @@ class StateManager {
 
     getDefaultState() {
         return {
+            schemaVersion: this.schemaVersion,
             program: '',
             courses: [],
             theme: this.getSystemTheme(),
@@ -66,25 +108,6 @@ class StateManager {
         return this.state;
     }
 }
-
-function showVersionDetails() {
-    const modal = document.getElementById('versionModal');
-    const content = document.getElementById('versionModalContent');
-    if (!modal || !content) return;
-
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    content.classList.remove('scale-95');
-    content.classList.add('scale-100');
-
-    document.getElementById('btnCloseVersionModal').onclick = () => {
-        modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        content.classList.add('scale-95');
-        content.classList.remove('scale-100');
-    };
-}
-
 
 // ============================================
 // CURRICULUM DATA HANDLER
@@ -113,25 +136,6 @@ class CurriculumHandler {
     }
 }
 
-function showVersionDetails() {
-    const modal = document.getElementById('versionModal');
-    const content = document.getElementById('versionModalContent');
-    if (!modal || !content) return;
-
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    content.classList.remove('scale-95');
-    content.classList.add('scale-100');
-
-    document.getElementById('btnCloseVersionModal').onclick = () => {
-        modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        content.classList.add('scale-95');
-        content.classList.remove('scale-100');
-    };
-}
-
-
 // ============================================
 // GRADING & CALCULATION ENGINE
 // ============================================
@@ -143,39 +147,38 @@ class GradingEngine {
 
     calculateGrade(marks) {
         if (marks === null || marks < 0 || marks > 100) return null;
-        
+
         // Round to nearest integer: .5 and above goes up (e.g., 65.5 -> 66)
         const roundedMarks = Math.round(marks);
-        
+
         for (const threshold of this._thresholds) {
             if (roundedMarks >= threshold) {
                 return GRADING_POLICY[threshold];
             }
         }
-        return null;
+        return GRADING_POLICY[0];
     }
 
     calculateSGPA(courses) {
         if (!courses || courses.length === 0) return 0;
-
-        const validCourses = courses.filter(c => c.marks !== null && c.marks !== undefined);
-        if (validCourses.length === 0) return 0;
-
-        let totalGradePoints = 0;
         let totalCredits = 0;
+        let totalPoints = 0;
 
-        validCourses.forEach(course => {
-            const grade = this.calculateGrade(course.marks);
-            if (grade) {
-                totalGradePoints += grade.gpa * course.credits;
-                totalCredits += course.credits;
+        courses.forEach(course => {
+            if (course.marks !== null) {
+                const gradeInfo = this.calculateGrade(course.marks);
+                if (gradeInfo) {
+                    totalCredits += course.credits;
+                    totalPoints += gradeInfo.gpa * course.credits;
+                }
             }
         });
 
-        return totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+        return totalCredits > 0 ? (totalPoints / totalCredits) : 0;
     }
 
     calculateCGPA(allCourses) {
+        if (!allCourses || allCourses.length === 0) return 0;
         return this.calculateSGPA(allCourses);
     }
 
@@ -187,25 +190,6 @@ class GradingEngine {
         return 'Senior';
     }
 }
-
-function showVersionDetails() {
-    const modal = document.getElementById('versionModal');
-    const content = document.getElementById('versionModalContent');
-    if (!modal || !content) return;
-
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    content.classList.remove('scale-95');
-    content.classList.add('scale-100');
-
-    document.getElementById('btnCloseVersionModal').onclick = () => {
-        modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        content.classList.add('scale-95');
-        content.classList.remove('scale-100');
-    };
-}
-
 
 // ============================================
 // UI MANAGER
@@ -224,6 +208,13 @@ class UIManager {
         this.selectedDepartment = 'ALL';
         this.isEditingSemester = false;
         this.tempEditedCourses = [];
+
+        // Timetable state
+        this.currentTimetableSection = localStorage.getItem('zabcal_selected_section') || 'BCS-3E';
+        this.currentTimetableDayFilter = 'ALL';
+        this.currentTimetableSearchQuery = '';
+        this.currentTimetableViewMode = 'pdf';
+
         this.initializeUI();
     }
 
@@ -235,10 +226,27 @@ class UIManager {
             this.setupEventListeners();
             this.setupSemesterListeners();
             this.setupDataManagementListeners();
+            this.initTimetable();
             this._isInitialized = true;
         }
         this.restoreState();
         this.updateAllMetrics();
+
+        // Initial route handling based on hash
+        const initialHash = window.location.hash.replace('#', '');
+        if (['calculator', 'semesters', 'timetable', 'about'].includes(initialHash)) {
+            this.navigateTo(initialHash);
+        } else {
+            this.navigateTo('calculator');
+        }
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', () => {
+            const h = window.location.hash.replace('#', '');
+            if (['calculator', 'semesters', 'timetable', 'about'].includes(h) && h !== this._activeView) {
+                this.navigateTo(h);
+            }
+        });
     }
 
     initIntroAnimation() {
@@ -931,7 +939,7 @@ class UIManager {
             let badgeHtml = '';
             if (courseInfo.category && courseInfo.category !== 'Core') {
                 const isDomain = courseInfo.category.toLowerCase().includes('domain') ||
-                                 ['marketing', 'management', 'finance', 'supply chain', 'information technology', 'business analysis'].some(c => courseInfo.category.toLowerCase().includes(c));
+                    ['marketing', 'management', 'finance', 'supply chain', 'information technology', 'business analysis'].some(c => courseInfo.category.toLowerCase().includes(c));
                 const badgeClass = isDomain
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
@@ -1222,6 +1230,7 @@ class UIManager {
         const views = {
             calculator: document.getElementById('calculatorView'),
             semesters: document.getElementById('semestersView'),
+            timetable: document.getElementById('timetableView'),
             about: document.getElementById('aboutView')
         };
 
@@ -1250,6 +1259,16 @@ class UIManager {
         }
 
         this._syncNavState(this._activeView);
+
+        if (this._activeView === 'semesters') {
+            this.renderSemestersList();
+        } else if (this._activeView === 'timetable') {
+            this.renderTimetableInteractive();
+            this.renderPDFPreview();
+        } else if (this._activeView === 'calculator') {
+            this.updateAllMetrics();
+        }
+
         if (this._activeView === 'about') {
             const aboutCard = document.getElementById('aboutHeroCard');
             if (window.lenis) {
@@ -1677,6 +1696,462 @@ class UIManager {
             this.gradeChart.canvas.style.display = 'none';
         }
     }
+
+    // ============================================
+    // TIMETABLE ENGINE & RENDERING
+    // ============================================
+
+    initTimetable() {
+        const sectionSelector = document.getElementById('sectionSelector');
+        const sessionBadge = document.getElementById('timetableSessionBadge');
+        const lastUpdatedText = document.getElementById('timetableLastUpdatedText');
+        const searchInput = document.getElementById('timetableSearchInput');
+        const btnClearSearch = document.getElementById('btnClearTimetableSearch');
+        const btnViewModeInteractive = document.getElementById('btnViewModeInteractive');
+        const btnViewModePDF = document.getElementById('btnViewModePDF');
+        const btnPrintTimetable = document.getElementById('btnPrintTimetable');
+        const dayTabs = document.getElementById('timetableDayTabs');
+
+        const timetableData = window.TIMETABLE_DATA || { sections: {} };
+        if (sessionBadge && timetableData.academicSession) {
+            sessionBadge.textContent = timetableData.academicSession;
+        }
+        if (lastUpdatedText && timetableData.lastUpdated) {
+            lastUpdatedText.textContent = timetableData.lastUpdated;
+        }
+
+        const sections = Object.keys(timetableData.sections || {});
+        if (sectionSelector && sections.length > 0) {
+            sectionSelector.innerHTML = '';
+            sections.forEach(sec => {
+                const opt = document.createElement('option');
+                opt.value = sec;
+                opt.textContent = sec;
+                if (sec === this.currentTimetableSection) {
+                    opt.selected = true;
+                }
+                sectionSelector.appendChild(opt);
+            });
+
+            if (!sections.includes(this.currentTimetableSection)) {
+                this.currentTimetableSection = sections[0];
+                sectionSelector.value = sections[0];
+            }
+
+            sectionSelector.addEventListener('change', (e) => {
+                this.currentTimetableSection = e.target.value;
+                localStorage.setItem('zabcal_selected_section', this.currentTimetableSection);
+                this.renderTimetableInteractive();
+                this.renderPDFPreview();
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.currentTimetableSearchQuery = e.target.value.trim().toLowerCase();
+                if (btnClearSearch) {
+                    btnClearSearch.classList.toggle('hidden', !this.currentTimetableSearchQuery);
+                }
+                this.renderTimetableInteractive();
+            });
+        }
+
+        if (btnClearSearch && searchInput) {
+            btnClearSearch.addEventListener('click', () => {
+                searchInput.value = '';
+                this.currentTimetableSearchQuery = '';
+                btnClearSearch.classList.add('hidden');
+                this.renderTimetableInteractive();
+            });
+        }
+
+        if (dayTabs) {
+            dayTabs.addEventListener('click', (e) => {
+                const pill = e.target.closest('.timetable-day-pill');
+                if (!pill) return;
+
+                this.currentTimetableDayFilter = pill.dataset.day || 'ALL';
+
+                dayTabs.querySelectorAll('.timetable-day-pill').forEach(btn => {
+                    const isSelected = (btn.dataset.day || 'ALL') === this.currentTimetableDayFilter;
+                    if (isSelected) {
+                        btn.className = 'timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-primary text-white shadow-sm shrink-0 cursor-pointer';
+                    } else {
+                        btn.className = 'timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer';
+                    }
+                });
+
+                this.renderTimetableInteractive();
+            });
+        }
+
+        const interactiveView = document.getElementById('timetableInteractiveView');
+        const docPreviewView = document.getElementById('timetableDocPreviewView');
+
+        if (btnViewModeInteractive && btnViewModePDF) {
+            btnViewModeInteractive.addEventListener('click', () => {
+                this.currentTimetableViewMode = 'interactive';
+                interactiveView?.classList.remove('hidden');
+                docPreviewView?.classList.add('hidden');
+
+                btnViewModeInteractive.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer';
+                btnViewModePDF.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer';
+                this.renderTimetableInteractive();
+            });
+
+            btnViewModePDF.addEventListener('click', () => {
+                this.currentTimetableViewMode = 'pdf';
+                interactiveView?.classList.add('hidden');
+                docPreviewView?.classList.remove('hidden');
+
+                btnViewModePDF.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer';
+                btnViewModeInteractive.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer';
+                this.renderPDFPreview();
+            });
+        }
+
+        if (btnPrintTimetable) {
+            btnPrintTimetable.addEventListener('click', () => {
+                this.renderPDFPreview();
+                window.print();
+            });
+        }
+
+        this.renderTimetableInteractive();
+        this.renderPDFPreview();
+    }
+
+    renderTimetableMetrics(classes) {
+        const activeDaysEl = document.getElementById('metricActiveDays');
+        const totalSessionsEl = document.getElementById('metricTotalSessions');
+        const creditHoursEl = document.getElementById('metricCreditHours');
+        const venuesEl = document.getElementById('metricVenuesCount');
+
+        if (!classes || classes.length === 0) {
+            if (activeDaysEl) activeDaysEl.textContent = '0 Days';
+            if (totalSessionsEl) totalSessionsEl.textContent = '0';
+            if (creditHoursEl) creditHoursEl.textContent = '0 Cr';
+            if (venuesEl) venuesEl.textContent = '0';
+            return;
+        }
+
+        const distinctDays = new Set(classes.map(c => c.day));
+        const totalSessions = classes.length;
+        const totalCredits = classes.reduce((sum, c) => sum + (c.creditHours || 0), 0);
+        const distinctVenues = new Set(classes.map(c => c.venue).filter(Boolean));
+
+        if (activeDaysEl) activeDaysEl.textContent = `${distinctDays.size} Days`;
+        if (totalSessionsEl) totalSessionsEl.textContent = `${totalSessions}`;
+        if (creditHoursEl) creditHoursEl.textContent = `${totalCredits} Cr`;
+        if (venuesEl) venuesEl.textContent = `${distinctVenues.size}`;
+    }
+
+    renderTimetableInteractive() {
+        const container = document.getElementById('timetableCardsContainer');
+        if (!container) return;
+
+        const section = this.currentTimetableSection;
+        const allClasses = window.TIMETABLE_DATA?.sections?.[section] || [];
+
+        // Update metrics for this section
+        this.renderTimetableMetrics(allClasses);
+
+        // Filter by search query
+        let filtered = allClasses;
+        const query = (this.currentTimetableSearchQuery || '').toLowerCase().trim();
+        if (query) {
+            filtered = filtered.filter(c =>
+                (c.courseName && c.courseName.toLowerCase().includes(query)) ||
+                (c.code && c.code.toLowerCase().includes(query)) ||
+                (c.teacher && c.teacher.toLowerCase().includes(query)) ||
+                (c.venue && c.venue.toLowerCase().includes(query))
+            );
+        }
+
+        // Filter by day
+        if (this.currentTimetableDayFilter && this.currentTimetableDayFilter !== 'ALL') {
+            filtered = filtered.filter(c => c.day.toLowerCase() === this.currentTimetableDayFilter.toLowerCase());
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-16 px-4 bg-surface-container rounded-2xl border border-outline-variant/20">
+                    <span class="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3 block">event_busy</span>
+                    <h3 class="text-base font-bold text-on-surface mb-1">No lectures found</h3>
+                    <p class="text-xs text-on-surface-variant max-w-sm mx-auto">
+                        ${query ? 'No lectures match your search filter. Try clearing your search.' : 'No lectures scheduled for this selection.'}
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by day
+        const grouped = {};
+        const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        filtered.forEach(c => {
+            if (!grouped[c.day]) grouped[c.day] = [];
+            grouped[c.day].push(c);
+        });
+
+        const displayDays = daysOrder.filter(d => grouped[d] && grouped[d].length > 0);
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const todayName = dayNames[new Date().getDay()];
+
+        let html = '';
+        displayDays.forEach(day => {
+            const dayClasses = grouped[day];
+            const isToday = day.toLowerCase() === todayName.toLowerCase();
+            const dayCredits = dayClasses.reduce((s, c) => s + (c.creditHours || 0), 0);
+
+            // 1. Desktop Cards (Grid Layout)
+            let desktopCardsHTML = '';
+            dayClasses.forEach(c => {
+                desktopCardsHTML += `
+                    <div class="ui-card group p-4 sm:p-5 rounded-2xl bg-surface-container border border-outline-variant/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all flex flex-col justify-between gap-3 relative overflow-hidden">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="text-[10px] uppercase font-black tracking-widest px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                                ${c.code || 'COURSE'}
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                ${c.isLab ? `<span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Lab</span>` : ''}
+                                <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/20">
+                                    ${c.creditHours ? c.creditHours + ' Cr' : '-'}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm sm:text-base font-black text-on-surface group-hover:text-primary transition-colors leading-snug">
+                                ${c.courseName}
+                            </h4>
+                            <div class="flex items-center gap-1.5 mt-2 text-xs font-bold text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[16px] text-primary">person</span>
+                                <span>${c.teacher || 'Not Assigned'}</span>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-bold gap-2 flex-wrap">
+                            <div class="flex items-center gap-1.5 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+                                <span>${c.timing || '-'}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary font-black border border-outline-variant/20">
+                                <span class="material-symbols-outlined text-[14px]">meeting_room</span>
+                                <span>${c.venue || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 2. Mobile Cards (Agenda Timeline Layout)
+            let mobileCardsHTML = '';
+            dayClasses.forEach((c, idx) => {
+                mobileCardsHTML += `
+                    <div class="flex gap-4 p-4 rounded-2xl bg-surface-container border border-outline-variant/20 items-start relative group transition-all active:scale-[0.98]">
+                        <div class="shrink-0 w-16 text-right">
+                            <p class="text-[11px] font-black text-primary leading-tight">${c.timing || '-'}</p>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <h4 class="text-sm font-bold text-on-surface truncate leading-tight">${c.courseName}</h4>
+                                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">${c.code}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-on-surface-variant font-medium">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] text-primary">person</span>
+                                    ${c.teacher || 'Not Assigned'}
+                                </span>
+                                <span class="hidden sm:inline text-outline-variant/40">•</span>
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] text-primary">meeting_room</span>
+                                    ${c.venue || '-'}
+                                </span>
+                                ${c.isLab ? `<span class="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold"><span class="material-symbols-outlined text-[14px]">science</span> Lab</span>` : ''}
+                            </div>
+                        </div>
+                        ${idx !== dayClasses.length - 1 ? `
+                        <div class="absolute -bottom-3 left-[34px] w-px h-3 bg-outline-variant/30"></div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="space-y-3.5 anim-fade-up">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2.5">
+                            <h3 class="text-base sm:text-lg font-black text-on-surface">${day}</h3>
+                            <span class="text-[11px] font-bold text-on-surface-variant bg-surface-container px-2.5 py-0.5 rounded-full border border-outline-variant/20">
+                                ${dayClasses.length} ${dayClasses.length === 1 ? 'lecture' : 'lectures'} • ${dayCredits} Cr. Hrs
+                            </span>
+                            ${isToday ? `<span class="px-2.5 py-0.5 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-wider shadow-sm">Today</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        ${desktopCardsHTML}
+                    </div>
+                    <div class="md:hidden flex flex-col gap-4">
+                        ${mobileCardsHTML}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    renderPDFPreview() {
+        const container = document.getElementById('timetableExportArea');
+        if (!container) return;
+
+        const section = this.currentTimetableSection;
+        const classes = window.TIMETABLE_DATA?.sections?.[section] || [];
+        const session = window.TIMETABLE_DATA?.academicSession || 'Fall 2026';
+        const lastUpdated = window.TIMETABLE_DATA?.lastUpdated || 'September 8, 2026';
+
+        if (classes.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">event_note</span>
+                    <p class="text-gray-500 font-medium">Select a section to preview its timetable</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by day
+        const grouped = {};
+        const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        classes.forEach(c => {
+            if (!grouped[c.day]) grouped[c.day] = [];
+            grouped[c.day].push(c);
+        });
+
+        let rowsHTML = '';
+        daysOrder.forEach(day => {
+            if (grouped[day] && grouped[day].length > 0) {
+                const dayClasses = grouped[day];
+                dayClasses.forEach((c, idx) => {
+                    const isFirst = idx === 0;
+                    const isLast = idx === dayClasses.length - 1;
+                    rowsHTML += `
+                        <tr style="border-bottom: ${isLast ? '2px' : '1px'} solid #0f172a; page-break-inside: avoid; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                            ${isFirst ? `<td rowspan="${dayClasses.length}" style="padding: 14px 12px; font-weight: 900; color: #0f172a; text-align: center; border-right: 2px solid #0f172a; border-left: 2px solid #0f172a; vertical-align: middle; font-size: 14px; background-color: #f1f5f9;">${day}</td>` : ''}
+                            <td style="padding: 12px 14px; border-right: 1px solid #cbd5e1;">
+                                <div style="font-weight: 800; color: #0f172a; font-size: 13px; margin-bottom: 3px; font-family: 'Inter', sans-serif;">
+                                    ${c.courseName || '-'}
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                    <div style="font-size: 11px; font-weight: 700; color: #27187e;">${c.teacher || 'Not Assigned'}</div>
+                                    <div style="font-size: 10px; font-weight: 800; color: ${c.creditHours && c.creditHours > 1 ? '#e11d48' : '#d97706'}; text-transform: uppercase;">${c.creditHours ? c.creditHours + ' Credit Hours' : '? Credit Hours'}</div>
+                                </div>
+                            </td>
+                            <td style="padding: 12px; text-align: center; font-weight: 600; color: #1e293b; font-size: 12px; border-right: 1px solid #cbd5e1; font-family: monospace;">${c.timing || '-'}</td>
+                            <td style="padding: 12px; text-align: center; font-weight: 900; color: #0f172a; font-size: 13px; border-right: 2px solid #0f172a;">${c.venue || '-'}</td>
+                        </tr>
+                    `;
+                });
+            }
+        });
+
+        container.innerHTML = `
+            <div style="background-color: #ffffff; color: #0f172a; padding: 28px; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; position: relative;">
+                <!-- Header Top Bar -->
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 18px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="material-symbols-outlined" style="color: #27187e; font-size: 34px; transform: rotate(-12deg); font-variation-settings: 'FILL' 1, 'wght' 700;">school</span>
+                        <div>
+                            <span style="font-size: 24px; font-weight: 900; color: #27187e; letter-spacing: -0.04em;">ZabCal</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #64748b; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.1em;">• SZABIST Schedule</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">${session}</div>
+                        <div style="font-size: 10px; font-weight: 600; color: #64748b;">Updated: ${lastUpdated}</div>
+                    </div>
+                </div>
+
+                <!-- Section Title & Accent Line -->
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="display: inline-block; font-size: 38px; font-weight: 900; color: #1e88e5; letter-spacing: 0.02em; margin: 0; padding: 0 12px;">${section}</h2>
+                </div>
+                <div style="height: 4px; background: linear-gradient(90deg, #27187e 0%, #1e88e5 100%); margin-bottom: 20px; border-radius: 2px;"></div>
+
+                <!-- Timetable Grid -->
+                <table style="width: 100%; text-align: left; border-collapse: collapse; border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a; background-color: #ffffff;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #0f172a; background-color: #f1f5f9;">
+                            <th style="padding: 12px; font-weight: 900; color: #0f172a; text-align: center; width: 130px; border-left: 2px solid #0f172a; border-right: 2px solid #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Day</th>
+                            <th style="padding: 12px; font-weight: 900; color: #0f172a; text-align: center; border-right: 1px solid #cbd5e1; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Course Name</th>
+                            <th style="padding: 12px; font-weight: 900; color: #0f172a; text-align: center; border-right: 1px solid #cbd5e1; width: 220px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Timing</th>
+                            <th style="padding: 12px; font-weight: 900; color: #0f172a; text-align: center; border-right: 2px solid #0f172a; width: 120px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Venue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+
+                <!-- Required Document Footer Text -->
+                <div style="margin-top: 28px; padding-top: 14px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #27187e; font-weight: 800; font-size: 18px; margin: 0 0 3px 0; font-family: 'Inter', sans-serif;">Generate your TimeTable at!</p>
+                    <p style="color: #1e88e5; font-weight: 700; font-size: 14px; margin: 0; font-family: 'Inter', sans-serif;">zabcal.vercel.app</p>
+                </div>
+            </div>
+        `;
+    }
+
+    exportTimetableToPDF() {
+        const container = document.getElementById('timetableExportArea');
+        const section = this.currentTimetableSection;
+        const btnDownload = document.getElementById('btnDownloadPDF');
+
+        if (!container || !section || typeof html2pdf === 'undefined') {
+            if (typeof html2pdf === 'undefined') {
+                this.showError('PDF library is still loading. Please try again in a moment.');
+            } else {
+                this.showError('Please select a valid section before generating PDF.');
+            }
+            return;
+        }
+
+        // Ensure the preview is freshly rendered before PDF conversion
+        this.renderPDFPreview();
+
+        const originalBtnHTML = btnDownload ? btnDownload.innerHTML : '';
+        if (btnDownload) {
+            btnDownload.disabled = true;
+            btnDownload.innerHTML = `
+                <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                <span>Generating PDF...</span>
+            `;
+        }
+
+        const filename = `ZabCal_Timetable_${section}.pdf`;
+        const opt = {
+            margin: [0.2, 0.2, 0.2, 0.2],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+
+        // Use html2pdf's promise chain for better error handling
+        html2pdf().set(opt).from(container).save().then(() => {
+            if (btnDownload) {
+                btnDownload.disabled = false;
+                btnDownload.innerHTML = originalBtnHTML;
+            }
+        }).catch(err => {
+            console.error('PDF generation error:', err);
+            if (btnDownload) {
+                btnDownload.disabled = false;
+                btnDownload.innerHTML = originalBtnHTML;
+            }
+            this.showError('Failed to generate PDF. See console for details.');
+        });
+    }
+
 }
 
 function showVersionDetails() {
@@ -1748,4 +2223,7 @@ function initLenis() {
 document.addEventListener('DOMContentLoaded', () => {
     initLenis();
     window.uiManager = new UIManager();
+    document.querySelectorAll('.current-year').forEach(el => {
+        el.textContent = new Date().getFullYear();
+    });
 });
