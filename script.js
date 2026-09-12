@@ -15,6 +15,16 @@ const GRADING_POLICY = {
     0: { grade: 'F', gpa: 0.0 }
 };
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
 function getGradeBadgeStyle(grade) {
     if (!grade || grade === '-') {
         return {
@@ -62,13 +72,13 @@ class StateManager {
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                if (parsed && typeof parsed === 'object') {
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                     return {
                         schemaVersion: this.schemaVersion,
                         program: typeof parsed.program === 'string' ? parsed.program : '',
-                        courses: Array.isArray(parsed.courses) ? parsed.courses : [],
+                        courses: this.sanitizeCourses(parsed.courses),
                         theme: parsed.theme === 'dark' || parsed.theme === 'light' ? parsed.theme : this.getSystemTheme(),
-                        semesters: parsed.semesters && typeof parsed.semesters === 'object' ? parsed.semesters : {}
+                        semesters: this.sanitizeSemesters(parsed.semesters)
                     };
                 }
             } catch (e) {
@@ -87,6 +97,55 @@ class StateManager {
             theme: this.getSystemTheme(),
             semesters: {}
         };
+    }
+
+    sanitizeCourses(courses) {
+        if (!Array.isArray(courses)) return [];
+        return courses.map(c => {
+            if (!c || typeof c !== 'object') return null;
+            const code = typeof c.code === 'string' ? c.code.trim().toUpperCase().slice(0, 32) : '';
+            if (!code) return null;
+            const name = typeof c.name === 'string' ? c.name : code;
+            const credits = Number(c.credits);
+            let marks = null;
+            if (c.marks !== null && c.marks !== undefined) {
+                const m = Number(c.marks);
+                if (!isNaN(m) && m >= 0 && m <= 100) marks = m;
+            }
+            return {
+                code: code,
+                name: name,
+                credits: Number.isFinite(credits) && credits > 0 ? credits : 0,
+                marks: marks,
+                isRepeated: !!c.isRepeated
+            };
+        }).filter(Boolean);
+    }
+
+    sanitizeSemesters(semesters) {
+        if (!semesters || typeof semesters !== 'object' || Array.isArray(semesters)) return {};
+        const currentYear = String(new Date().getFullYear());
+        const clean = {};
+        Object.entries(semesters).forEach(([key, sem]) => {
+            if (!sem || typeof sem !== 'object') return;
+            const courses = this.sanitizeCourses(sem.courses);
+            const completedCredits = courses
+                .filter(c => c.marks !== null)
+                .reduce((sum, c) => sum + c.credits, 0);
+            const rawCredits = Number(sem.credits);
+            const year = /^\d{4}$/.test(String(sem.year)) ? String(sem.year) : currentYear;
+            clean[key] = {
+                id: typeof sem.id === 'string' ? sem.id : key,
+                number: sem.number !== undefined && sem.number !== null ? String(sem.number) : '1',
+                term: typeof sem.term === 'string' && sem.term ? sem.term : 'Fall',
+                year: year,
+                courses: courses,
+                credits: Number.isFinite(rawCredits) && rawCredits > 0 ? rawCredits : completedCredits,
+                sgpa: Number.isFinite(Number(sem.sgpa)) ? Number(sem.sgpa) : 0,
+                timestamp: Number(sem.timestamp) || Date.now()
+            };
+        });
+        return clean;
     }
 
     getSystemTheme() {
@@ -201,6 +260,7 @@ class UIManager {
         this.curriculumHandler = new CurriculumHandler();
         this.gradingEngine = new GradingEngine();
         this._autocompleteTimeout = null;
+        this._chartInitTries = 0;
         this.currentlyViewedSemesterId = null;
         this.semesterMode = '';
         this._activeView = 'calculator';
@@ -210,10 +270,12 @@ class UIManager {
         this.tempEditedCourses = [];
 
         // Timetable state
+        const isMobileDevice = window.innerWidth < 768;
+        this.currentTimetableDepartment = localStorage.getItem('zabcal_selected_department') || 'Computer Science';
         this.currentTimetableSection = localStorage.getItem('zabcal_selected_section') || 'BCS-3E';
         this.currentTimetableDayFilter = 'ALL';
         this.currentTimetableSearchQuery = '';
-        this.currentTimetableViewMode = 'pdf';
+        this.currentTimetableViewMode = localStorage.getItem('zabcal_timetable_view_mode') || (isMobileDevice ? 'interactive' : 'pdf');
 
         this.initializeUI();
     }
@@ -279,9 +341,16 @@ class UIManager {
         }
 
         anim.play();
+
+        // Failsafe: never let the intro overlay block input indefinitely.
+        this._introDismissTimer = setTimeout(() => this.dismissIntroOverlay(), 6000);
     }
 
     dismissIntroOverlay() {
+        if (this._introDismissTimer) {
+            clearTimeout(this._introDismissTimer);
+            this._introDismissTimer = null;
+        }
         const overlay = document.getElementById('introOverlay');
         if (overlay && !overlay.classList.contains('dismissed')) {
             overlay.classList.add('dismissed');
@@ -421,7 +490,7 @@ class UIManager {
                 return;
             }
             currentSuggestions = matching;
-            highlightedIndex = -1;
+            highlightedIndex = 0;
             this.renderAutocompleteSuggestions(matching);
         };
 
@@ -453,8 +522,7 @@ class UIManager {
                 if (highlightedIndex >= 0) {
                     this.selectSuggestion(currentSuggestions[highlightedIndex]);
                 } else {
-                    this.addCourse(courseCodeInput.value);
-                    courseCodeInput.value = '';
+                    this.addCurrentCourse();
                 }
             } else if (e.key === 'Escape') {
                 autocompleteSuggestions.classList.remove('show');
@@ -470,24 +538,7 @@ class UIManager {
         });
 
         document.getElementById('addCourseBtn').addEventListener('click', () => {
-            const courseCode = courseCodeInput.value.trim();
-            const marks = document.getElementById('courseMarksInput').value.trim();
-
-            if (!marks) {
-                this.showError('Please enter marks for the course');
-                return;
-            }
-
-            const marksNum = parseFloat(marks);
-            if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
-                this.showError('Please enter valid marks between 0 and 100');
-                return;
-            }
-
-            this.addCourse(courseCode, marksNum);
-            courseCodeInput.value = '';
-            document.getElementById('courseMarksInput').value = '';
-            courseCodeInput.focus();
+            this.addCurrentCourse();
         });
 
         // Clear All Courses button
@@ -502,6 +553,36 @@ class UIManager {
         const state = this.stateManager.getState();
         this.updateProgramUI(state.program || '');
         this.renderCoursesList();
+    }
+
+    addCurrentCourse() {
+        const courseCodeInput = document.getElementById('courseCodeInput');
+        const marksInput = document.getElementById('courseMarksInput');
+        if (!courseCodeInput || !marksInput) return;
+
+        const courseCode = courseCodeInput.value.trim();
+        const marks = marksInput.value.trim();
+
+        if (!courseCode) {
+            this.showError('Please enter a course code');
+            return;
+        }
+
+        if (!marks) {
+            this.showError('Please enter marks for the course');
+            return;
+        }
+
+        const marksNum = parseFloat(marks);
+        if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
+            this.showError('Please enter valid marks between 0 and 100');
+            return;
+        }
+
+        this.addCourse(courseCode, marksNum);
+        courseCodeInput.value = '';
+        marksInput.value = '';
+        courseCodeInput.focus();
     }
 
     addCourse(courseCode, marks = null) {
@@ -608,10 +689,10 @@ class UIManager {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
-                    <div class="font-bold text-on-surface">${course.code}</div>
+                    <div class="font-bold text-on-surface">${escapeHtml(course.code)}</div>
                     ${isRepeated ? `<div class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 mt-1"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</div>` : ''}
                 </td>
-                <td>${course.name}</td>
+                <td>${escapeHtml(course.name)}</td>
                 <td>${course.credits}</td>
                 <td>
                     <input 
@@ -656,7 +737,7 @@ class UIManager {
             card.innerHTML = `
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-black text-xs tracking-wide">${course.code}</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-black text-xs tracking-wide">${escapeHtml(course.code)}</span>
                         <span class="px-2 py-0.5 rounded-md bg-surface-container-highest text-on-surface-variant text-[11px] font-semibold">${course.credits} Cr</span>
                         ${isRepeated ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeat</span>` : ''}
                     </div>
@@ -664,7 +745,7 @@ class UIManager {
                         <span class="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                 </div>
-                <div class="text-xs font-bold text-on-surface leading-snug">${course.name}</div>
+                <div class="text-xs font-bold text-on-surface leading-snug">${escapeHtml(course.name)}</div>
                 <div class="flex items-center justify-between gap-3 pt-1 border-t border-outline-variant/10">
                     <div class="flex items-center gap-2">
                         <label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Marks:</label>
@@ -864,7 +945,7 @@ class UIManager {
 
         // Update Progress card
         document.getElementById('progressFill').style.width = `${Math.min(100, progress)}%`;
-        document.getElementById('progressInfo').textContent = `${Math.round(progress)}%`;
+        document.getElementById('progressInfo').textContent = `${Math.min(100, Math.round(progress))}%`;
 
         // Update Total Courses Completed on Progress card (unique completed courses from saved semesters)
         let savedSemesterCoursesCount = 0;
@@ -943,9 +1024,9 @@ class UIManager {
                 const badgeClass = isDomain
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
-                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${badgeClass} shrink-0">${courseInfo.category}</span>`;
+                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${badgeClass} shrink-0">${escapeHtml(courseInfo.category)}</span>`;
             } else if (courseInfo.keywords && courseInfo.keywords.length > 0 && !courseInfo.keywords[0].includes('xxxx')) {
-                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">${courseInfo.keywords[0]}</span>`;
+                badgeHtml = `<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">${escapeHtml(courseInfo.keywords[0])}</span>`;
             }
 
             const creditsHtml = courseInfo.credits ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant shrink-0">${courseInfo.credits} Cr</span>` : '';
@@ -953,8 +1034,8 @@ class UIManager {
             return `
                 <div class="autocomplete-item ${index === 0 ? 'highlighted' : ''} flex items-center justify-between gap-2" data-index="${index}" data-code="${code}">
                     <div class="flex items-center gap-2 min-w-0 flex-1">
-                        <span class="autocomplete-item-code shrink-0">${code}</span>
-                        <span class="autocomplete-item-name truncate">${courseInfo.name}</span>
+                        <span class="autocomplete-item-code shrink-0">${escapeHtml(code)}</span>
+                        <span class="autocomplete-item-name truncate">${escapeHtml(courseInfo.name)}</span>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0 ml-2">
                         ${badgeHtml}
@@ -994,7 +1075,7 @@ class UIManager {
         const toast = document.createElement('div');
         const icons = { error: 'error', success: 'check_circle', info: 'info' };
         toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type] || 'info'}</span><span>${message}</span>`;
+        toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type] || 'info'}</span><span>${escapeHtml(message)}</span>`;
         container.appendChild(toast);
         requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
         setTimeout(() => {
@@ -1045,21 +1126,41 @@ class UIManager {
             }
         });
 
-        document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
-            window.lenis?.stop();
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-            step1.classList.remove('hidden');
-            step2.classList.add('hidden');
-            semYear.value = new Date().getFullYear();
-        });
-
-        document.getElementById('btnCloseAddModal')?.addEventListener('click', () => {
-            modal.classList.add('opacity-0');
+        const closeAddModal = () => {
+            modal.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => {
                 modal.classList.add('hidden');
                 window.lenis?.start();
             }, 300);
+        };
+
+        document.getElementById('openAddSemesterModal')?.addEventListener('click', () => {
+            window.lenis?.stop();
+            const currentCourses = this.stateManager.getState().courses || [];
+            const countText = document.getElementById('step1CountText');
+            if (countText) {
+                countText.textContent = currentCourses.length === 1 ? '1 course in table' : `${currentCourses.length} courses in table`;
+            }
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            step1.classList.remove('hidden');
+            step2.classList.add('hidden');
+            step2.classList.remove('flex');
+            semYear.value = new Date().getFullYear();
+        });
+
+        document.getElementById('btnCloseAddModal')?.addEventListener('click', closeAddModal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeAddModal();
+        });
+
+        document.getElementById('btnBackToAddStep1')?.addEventListener('click', () => {
+            step2.classList.add('hidden');
+            step2.classList.remove('flex');
+            step1.classList.remove('hidden');
         });
 
         document.getElementById('btnSaveCurrent')?.addEventListener('click', () => {
@@ -1078,7 +1179,7 @@ class UIManager {
                 const repeatedCourses = (state.courses || []).filter(c => this.isCourseInSavedSemesters(c.code));
                 if (repeatedCourses.length > 0) {
                     noticeList.innerHTML = repeatedCourses.map(c => `
-                        <li><span class="font-bold text-on-surface">${c.code}</span> (${c.name}): <span class="font-bold text-amber-600 dark:text-amber-400">Repeating Course</span></li>
+                        <li><span class="font-bold text-on-surface">${escapeHtml(c.code)}</span> (${escapeHtml(c.name)}): <span class="font-bold text-amber-600 dark:text-amber-400">Repeating Course</span></li>
                     `).join('');
                     noticeBox.classList.remove('hidden');
                 } else {
@@ -1090,10 +1191,7 @@ class UIManager {
         document.getElementById('btnStartFresh')?.addEventListener('click', () => {
             if (confirm("This will clear your current table. Are you sure?")) {
                 this.clearAllCourses();
-
-                // Close Modal
-                modal.classList.add('opacity-0');
-                setTimeout(() => modal.classList.add('hidden'), 300);
+                closeAddModal();
             }
         });
 
@@ -1104,12 +1202,20 @@ class UIManager {
             const semNum = isSummer ? 'Summer' : rawSemNum;
             const year = document.getElementById('semYear').value;
 
-            if (!year) return this.showError("Please enter a year");
+            if (!year || !/^\d{4}$/.test(String(year).trim()) || Number(year) < 1990 || Number(year) > 2100) {
+                return this.showError("Please enter a valid year between 1990 and 2100");
+            }
 
             const state = this.stateManager.getState();
             state.semesters = state.semesters || {};
 
             const semKey = isSummer ? `Summer-${year}-${Date.now().toString().slice(-4)}` : `S${semNum}-${semTerm}-${year}`;
+
+            // Avoid silently overwriting an existing semester that shares the same deterministic key
+            if (!isSummer && state.semesters[semKey]) {
+                const overwrite = confirm(`A "${semKey}" semester already exists. Overwrite it with the current course data?`);
+                if (!overwrite) return;
+            }
             let coursesToSave = [];
 
             if (this.semesterMode === 'save_current') {
@@ -1159,9 +1265,33 @@ class UIManager {
         document.getElementById('btnBackToCalc')?.addEventListener('click', () => this.navigateTo('calculator'));
 
         document.getElementById('btnCloseDetails')?.addEventListener('click', () => {
-            this.isEditingSemester = false;
-            this.tempEditedCourses = [];
-            document.getElementById('semesterDetailsView').classList.add('hidden');
+            this.closeSemDetails();
+        });
+
+        document.getElementById('semesterDetailsView')?.addEventListener('click', (e) => {
+            if (e.target.id === 'semesterDetailsView') {
+                this.closeSemDetails();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const semModal = document.getElementById('semesterDetailsView');
+                if (semModal && semModal.classList.contains('sem-modal-active')) {
+                    this.closeSemDetails();
+                }
+                const addModal = document.getElementById('addSemesterModal');
+                if (addModal && !addModal.classList.contains('hidden') && !addModal.classList.contains('opacity-0')) {
+                    closeAddModal();
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('[data-sem-id]');
+            if (card && card.dataset.semId) {
+                this.openSemDetails(card.dataset.semId);
+            }
         });
 
         document.getElementById('btnEditSemMarks')?.addEventListener('click', () => {
@@ -1220,7 +1350,7 @@ class UIManager {
             if (confirm('Are you sure you want to delete this semester?')) {
                 delete state.semesters[this.currentlyViewedSemesterId];
                 this.stateManager.setState({ semesters: state.semesters });
-                document.getElementById('semesterDetailsView').classList.add('hidden');
+                this.closeSemDetails();
                 this.updateAllMetrics();
             }
         });
@@ -1329,13 +1459,13 @@ class UIManager {
             const semBadge = isSummer ? 'Summer Semester' : `Sem ${sem.number}`;
             const semTitle = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year}`;
             return `
-            <div class="bg-surface-container-high p-3 rounded-xl border border-outline-variant/30 cursor-pointer hover:border-primary transition-colors flex justify-between items-center" onclick="window.uiManager.openSemDetails('${sem.id}')">
+            <div class="bg-surface-container-high p-3 rounded-xl border border-outline-variant/30 cursor-pointer hover:border-primary transition-colors flex justify-between items-center" data-sem-id="${escapeHtml(sem.id)}">
                 <div>
-                    <h5 class="text-xs font-bold text-on-surface">${semTitle}</h5>
-                    <p class="text-[9px] text-on-surface-variant font-medium">${semBadge} • ${sem.credits} Cr • ${sem.courses ? sem.courses.length : 0} Courses</p>
+                    <h5 class="text-xs font-bold text-on-surface">${escapeHtml(semTitle)}</h5>
+                    <p class="text-[9px] text-on-surface-variant font-medium">${escapeHtml(semBadge)} • ${sem.credits} Cr • ${sem.courses ? sem.courses.length : 0} Courses</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-xs font-black text-primary">${sem.sgpa.toFixed(2)}</p>
+                    <p class="text-xs font-black text-primary">${typeof sem.sgpa === 'number' ? sem.sgpa.toFixed(2) : '0.00'}</p>
                 </div>
             </div>
         `}).join('');
@@ -1345,16 +1475,16 @@ class UIManager {
             const semBadge = isSummer ? 'Summer Semester' : `Semester ${sem.number}`;
             const semTitle = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year}`;
             return `
-            <div class="bg-surface-container rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-outline-variant/30 hover:border-primary/50 transition-all hover:shadow-[0_10px_40px_-10px_rgba(39,24,126,0.2)] cursor-pointer group" onclick="window.uiManager.openSemDetails('${sem.id}')">
+            <div class="bg-surface-container rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-outline-variant/30 hover:border-primary/50 transition-all hover:shadow-[0_10px_40px_-10px_rgba(39,24,126,0.2)] cursor-pointer group" data-sem-id="${escapeHtml(sem.id)}">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-black uppercase text-primary tracking-widest bg-primary/10 px-3 py-1 rounded-full">${semBadge}</span>
+                    <span class="text-[10px] font-black uppercase text-primary tracking-widest bg-primary/10 px-3 py-1 rounded-full">${escapeHtml(semBadge)}</span>
                     <span class="text-[10px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full">${sem.courses ? sem.courses.length : 0} Courses</span>
                 </div>
-                <h3 class="text-xl font-black text-on-surface mb-4 group-hover:text-primary transition-colors">${semTitle}</h3>
+                <h3 class="text-xl font-black text-on-surface mb-4 group-hover:text-primary transition-colors">${escapeHtml(semTitle)}</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-surface-container-high rounded-xl p-3 sm:p-4 border border-outline-variant/20">
                         <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">SGPA</p>
-                        <p class="text-2xl font-black text-primary">${sem.sgpa.toFixed(2)}</p>
+                        <p class="text-2xl font-black text-primary">${typeof sem.sgpa === 'number' ? sem.sgpa.toFixed(2) : '0.00'}</p>
                     </div>
                     <div class="bg-surface-container-high rounded-xl p-3 sm:p-4 border border-outline-variant/20">
                         <p class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">Credits</p>
@@ -1369,15 +1499,37 @@ class UIManager {
         `}).join('');
     }
 
+    closeSemDetails() {
+        const detailsView = document.getElementById('semesterDetailsView');
+        if (!detailsView || detailsView.classList.contains('hidden')) return;
+        this.isEditingSemester = false;
+        this.tempEditedCourses = [];
+        detailsView.classList.remove('sem-modal-active');
+        setTimeout(() => {
+            detailsView.classList.add('hidden');
+            window.lenis?.start();
+        }, 500);
+    }
+
     openSemDetails(id, isEditMode = false) {
-        this.navigateTo('semesters');
+        if (this._activeView !== 'semesters') {
+            this.navigateTo('semesters');
+        }
         this.currentlyViewedSemesterId = id;
         this.isEditingSemester = isEditMode;
         const sem = this.stateManager.getState().semesters[id];
         if (!sem) return;
 
         const detailsView = document.getElementById('semesterDetailsView');
+        if (!detailsView) return;
+
+        window.lenis?.stop();
         detailsView.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                detailsView.classList.add('sem-modal-active');
+            });
+        });
 
         const editActionBar = document.getElementById('semEditActionBar');
         const btnEditMarks = document.getElementById('btnEditSemMarks');
@@ -1392,6 +1544,10 @@ class UIManager {
 
         const isSummer = sem.number === 'Summer' || sem.term === 'Summer';
         const semTitleDisplay = isSummer ? `Summer Semester ${sem.year}` : `${sem.term} ${sem.year} (Semester ${sem.number})`;
+        const semBadgeText = isSummer ? `Summer ${sem.year}` : `Semester ${sem.number} • ${sem.term} ${sem.year}`;
+
+        const badgeEl = document.getElementById('detailSemBadge');
+        if (badgeEl) badgeEl.textContent = semBadgeText;
         document.getElementById('detailSemTitle').textContent = semTitleDisplay;
         document.getElementById('detailSemGPA').textContent = sem.sgpa.toFixed(2);
         document.getElementById('detailSemCredits').textContent = sem.credits;
@@ -1404,8 +1560,8 @@ class UIManager {
         const mobileContainer = document.getElementById('detailSemCoursesMobile');
 
         if (!coursesToRender || coursesToRender.length === 0) {
-            if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-sm text-on-surface-variant">No courses found in this semester.</td></tr>`;
-            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-sm text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20">No courses found in this semester.</div>`;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-sm font-semibold text-on-surface-variant">No courses found in this semester.</td></tr>`;
+            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-sm font-semibold text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/20">No courses found in this semester.</div>`;
             return;
         }
 
@@ -1420,63 +1576,83 @@ class UIManager {
 
             const gradeObj = num !== null ? this.gradingEngine.calculateGrade(num) : null;
             const gradeStr = gradeObj ? gradeObj.grade : '-';
+            const badgeStyle = getGradeBadgeStyle(gradeStr);
 
             // Update row desktop
-            const rowGradeEl = document.querySelector(`.sem-live-grade-${index}`);
-            if (rowGradeEl) rowGradeEl.textContent = gradeStr;
+            const rowBadgeEl = document.querySelector(`.sem-live-grade-${index}`);
+            if (rowBadgeEl) {
+                rowBadgeEl.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs ${badgeStyle.badge} sem-live-grade-${index}`;
+                const dot = rowBadgeEl.querySelector(`.sem-live-dot-${index}`);
+                if (dot) dot.className = `w-1.5 h-1.5 rounded-full ${badgeStyle.dot} sem-live-dot-${index}`;
+                const txt = rowBadgeEl.querySelector(`.sem-live-grade-text-${index}`);
+                if (txt) txt.textContent = gradeStr;
+            }
 
             // Update card mobile
-            const cardGradeEl = document.querySelector(`.sem-live-card-grade-${index}`);
-            if (cardGradeEl) cardGradeEl.textContent = gradeStr;
+            const cardBadgeEl = document.querySelector(`.sem-live-card-badge-${index}`);
+            if (cardBadgeEl) {
+                cardBadgeEl.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-xs ${badgeStyle.badge} sem-live-card-badge-${index}`;
+                const dot = cardBadgeEl.querySelector(`.sem-live-card-dot-${index}`);
+                if (dot) dot.className = `w-1.5 h-1.5 rounded-full ${badgeStyle.dot} sem-live-card-dot-${index}`;
+                const txt = cardBadgeEl.querySelector(`.sem-live-card-grade-${index}`);
+                if (txt) txt.textContent = gradeStr;
+            }
             const cardGpaEl = document.querySelector(`.sem-live-card-gpa-${index}`);
             if (cardGpaEl) cardGpaEl.textContent = gradeObj ? `GPA ${gradeObj.gpa.toFixed(2)}` : '';
         };
 
-        // Render Desktop Table (clean, no truncation, full names wrapping properly)
+        // Render Desktop Table (clean, modern pill badges, monospace code, wrapping course names)
         if (tbody) {
             tbody.innerHTML = coursesToRender.map((course, idx) => {
                 const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
                 const gradeStr = gradeObj ? gradeObj.grade : '-';
+                const badgeStyle = getGradeBadgeStyle(gradeStr);
                 const isRepeated = course.isRepeated || this.isCourseRepeatedAcrossSemesters(course.code);
 
                 const marksDisplay = isEditMode ? `
                     <div class="flex items-center justify-center">
                         <input type="number" min="0" max="100" 
-                            class="sem-edit-mark-input w-20 px-2 py-1 text-center font-bold bg-surface-container-high border border-outline-variant/40 rounded-lg text-on-surface focus:ring-2 focus:ring-primary outline-none transition-all text-sm" 
+                            class="sem-edit-mark-input w-20 px-2.5 py-1 text-center font-bold bg-surface-container-high border border-outline-variant/40 rounded-xl text-on-surface focus:ring-2 focus:ring-primary outline-none transition-all text-sm shadow-xs" 
                             value="${course.marks !== null ? course.marks : ''}" 
                             data-index="${idx}">
                     </div>
-                ` : `${course.marks !== null ? course.marks : '-'}`;
+                ` : `<span class="font-bold text-on-surface">${course.marks !== null ? course.marks : '-'}</span>`;
 
                 return `
-                    <tr class="hover:bg-surface-container-high/20 transition-colors border-b border-outline-variant/10">
-                        <td class="py-3.5 pr-4">
+                    <tr class="hover:bg-surface-container-high/30 dark:hover:bg-white/5 transition-colors border-b border-outline-variant/10 dark:border-white/5">
+                        <td class="py-3 px-4">
                             <div class="font-bold text-on-surface text-sm flex flex-wrap items-center gap-2">
-                                <span>${course.code}</span>
-                                ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating Course</span>` : ''}
+                                <span class="px-2 py-0.5 rounded-lg bg-primary/10 text-primary font-mono text-xs font-bold border border-primary/20">${escapeHtml(course.code)}</span>
+                                ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[12px]">repeat</span> Repeating</span>` : ''}
                             </div>
-                            <div class="text-xs text-on-surface-variant leading-snug break-words mt-0.5">${course.name}</div>
+                            <div class="text-xs text-on-surface-variant leading-snug break-words mt-1">${escapeHtml(course.name)}</div>
                         </td>
-                        <td class="py-3.5 text-center font-medium text-on-surface">${course.credits}</td>
-                        <td class="py-3.5 text-center font-medium text-on-surface">${marksDisplay}</td>
-                        <td class="py-3.5 text-right font-black text-primary text-base sem-live-grade-${idx}">${gradeStr}</td>
+                        <td class="py-3 px-2 text-center font-semibold text-on-surface text-sm">${course.credits}</td>
+                        <td class="py-3 px-2 text-center font-semibold text-on-surface text-sm">${marksDisplay}</td>
+                        <td class="py-3 px-4 text-right">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs ${badgeStyle.badge} sem-live-grade-${idx}">
+                                <span class="w-1.5 h-1.5 rounded-full ${badgeStyle.dot} sem-live-dot-${idx}"></span>
+                                <span class="sem-live-grade-text-${idx}">${gradeStr}</span>
+                            </span>
+                        </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // Render Mobile Cards (optimized for phone screens)
+        // Render Mobile Cards (optimized iOS cards with badges)
         if (mobileContainer) {
             mobileContainer.innerHTML = coursesToRender.map((course, idx) => {
                 const gradeObj = course.marks !== null ? this.gradingEngine.calculateGrade(course.marks) : null;
                 const gradeStr = gradeObj ? gradeObj.grade : '-';
+                const badgeStyle = getGradeBadgeStyle(gradeStr);
                 const isRepeated = course.isRepeated || this.isCourseRepeatedAcrossSemesters(course.code);
 
                 const marksDisplay = isEditMode ? `
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-semibold text-on-surface-variant">Marks:</span>
                         <input type="number" min="0" max="100" 
-                            class="sem-edit-mark-input w-20 px-2 py-1 text-center font-bold bg-surface-container border border-outline-variant/40 rounded-lg text-on-surface focus:ring-2 focus:ring-primary outline-none text-sm" 
+                            class="sem-edit-mark-input w-20 px-2 py-1 text-center font-bold bg-surface-container border border-outline-variant/40 rounded-xl text-on-surface focus:ring-2 focus:ring-primary outline-none text-sm shadow-xs" 
                             value="${course.marks !== null ? course.marks : ''}" 
                             data-index="${idx}">
                     </div>
@@ -1488,21 +1664,24 @@ class UIManager {
                 `;
 
                 return `
-                    <div class="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col gap-2.5">
+                    <div class="p-3.5 bg-surface-container-low/80 dark:bg-black/25 rounded-2xl border border-outline-variant/15 dark:border-white/5 flex flex-col gap-2.5">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1">
-                                    <span class="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">${course.code}</span>
-                                    ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[11px]">repeat</span> Repeating Course</span>` : ''}
+                                    <span class="inline-block px-2 py-0.5 rounded-lg bg-primary/10 text-primary font-mono font-bold text-xs border border-primary/20">${escapeHtml(course.code)}</span>
+                                    ${isRepeated ? `<span class="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"><span class="material-symbols-outlined text-[11px]">repeat</span> Repeating</span>` : ''}
                                 </div>
-                                <h5 class="font-bold text-on-surface text-sm leading-snug break-words">${course.name}</h5>
+                                <h5 class="font-bold text-on-surface text-sm leading-snug break-words">${escapeHtml(course.name)}</h5>
                             </div>
                             <div class="flex flex-col items-end shrink-0">
-                                <span class="px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-base sem-live-card-grade-${idx}">${gradeStr}</span>
-                                <span class="text-[10px] text-on-surface-variant font-medium mt-0.5 sem-live-card-gpa-${idx}">${gradeObj ? `GPA ${gradeObj.gpa.toFixed(2)}` : ''}</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-xs ${badgeStyle.badge} sem-live-card-badge-${idx}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${badgeStyle.dot} sem-live-card-dot-${idx}"></span>
+                                    <span class="sem-live-card-grade-${idx}">${gradeStr}</span>
+                                </span>
+                                <span class="text-[10px] text-on-surface-variant font-medium mt-1 sem-live-card-gpa-${idx}">${gradeObj ? `GPA ${gradeObj.gpa.toFixed(2)}` : ''}</span>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between text-xs text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                        <div class="flex items-center justify-between text-xs text-on-surface-variant pt-2 border-t border-outline-variant/10 dark:border-white/5">
                             <div class="flex items-center gap-1.5">
                                 <span class="material-symbols-outlined text-sm text-primary">credit_card</span>
                                 <span>Credits: <strong class="text-on-surface font-bold">${course.credits}</strong></span>
@@ -1524,17 +1703,6 @@ class UIManager {
                     });
                 });
             });
-        }
-
-        // Scroll into view gently on mobile and desktop
-        if (!isEditMode) {
-            setTimeout(() => {
-                if (window.lenis) {
-                    window.lenis.scrollTo(detailsView, { offset: -24, duration: 1.0 });
-                } else {
-                    detailsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 50);
         }
     }
 
@@ -1582,10 +1750,8 @@ class UIManager {
                 return {
                     ...this.stateManager.getDefaultState(),
                     ...parsed,
-                    courses: Array.isArray(parsed.courses) ? parsed.courses : [],
-                    semesters: parsed.semesters && typeof parsed.semesters === 'object' && !Array.isArray(parsed.semesters)
-                        ? parsed.semesters
-                        : {}
+                    courses: this.stateManager.sanitizeCourses(parsed.courses),
+                    semesters: this.stateManager.sanitizeSemesters(parsed.semesters)
                 };
             };
 
@@ -1612,8 +1778,13 @@ class UIManager {
         const ctx = document.getElementById('gradeDistributionChart');
         if (!ctx) return;
 
-        // Ensure Chart.js is loaded
+        // Ensure Chart.js is loaded (bounded retry to avoid infinite loop)
         if (typeof Chart === 'undefined') {
+            this._chartInitTries = (this._chartInitTries || 0) + 1;
+            if (this._chartInitTries > 25) {
+                console.warn('Chart.js failed to load after multiple retries; skipping chart init.');
+                return;
+            }
             setTimeout(() => this.initChart(), 200);
             return;
         }
@@ -1685,6 +1856,8 @@ class UIManager {
 
             // Adjust colors based on theme
             const isDark = document.documentElement.classList.contains('dark');
+            this.gradeChart.data.datasets[0].backgroundColor = isDark ? 'rgba(198, 192, 255, 0.55)' : 'rgba(39, 24, 126, 0.7)';
+            this.gradeChart.data.datasets[0].borderColor = isDark ? '#c6c0ff' : '#27187e';
             this.gradeChart.options.scales.x.ticks.color = isDark ? '#c8c4d4' : '#474552';
             this.gradeChart.options.scales.y.ticks.color = isDark ? '#c8c4d4' : '#474552';
             this.gradeChart.options.scales.x.grid.color = isDark ? 'rgba(198, 192, 255, 0.1)' : 'rgba(200, 196, 212, 0.2)';
@@ -1701,8 +1874,82 @@ class UIManager {
     // TIMETABLE ENGINE & RENDERING
     // ============================================
 
-    initTimetable() {
+    getSectionsForDepartment(dept) {
+        const timetableData = window.TIMETABLE_DATA || { sections: {} };
+        if (timetableData.departmentSections && timetableData.departmentSections[dept]) {
+            return timetableData.departmentSections[dept];
+        }
+        const all = Object.keys(timetableData.sections || {});
+        const normalizedDept = (dept || '').toLowerCase();
+        if (normalizedDept.includes('computer')) {
+            return all.filter(s => s.startsWith('BCS') || s.startsWith('BSAI') || s.startsWith('BSSE') || s.startsWith('CSC'));
+        } else if (normalizedDept.includes('manage') || normalizedDept.includes('manag')) {
+            return all.filter(s => s.startsWith('BBA') || s.startsWith('BSAF') || s.startsWith('BSBA') || s.startsWith('BA'));
+        } else if (normalizedDept.includes('media')) {
+            return all.filter(s => s.startsWith('BMS') || s.startsWith('BSMS') || s.startsWith('MS'));
+        }
+        return all;
+    }
+
+    getDepartmentForSection(section) {
+        const timetableData = window.TIMETABLE_DATA || { sections: {} };
+        if (timetableData.departmentSections) {
+            for (const [dept, secs] of Object.entries(timetableData.departmentSections)) {
+                if (secs.includes(section)) return dept;
+            }
+        }
+        if (section.startsWith('BCS') || section.startsWith('BSAI') || section.startsWith('BSSE') || section.startsWith('CSC')) {
+            return 'Computer Science';
+        }
+        if (section.startsWith('BBA') || section.startsWith('BSAF') || section.startsWith('BSBA') || section.startsWith('BA')) {
+            return 'Management Sciences';
+        }
+        if (section.startsWith('BMS') || section.startsWith('BSMS') || section.startsWith('MS')) {
+            return 'Media Science';
+        }
+        return 'Computer Science';
+    }
+
+    populateSectionOptions(selectedDept) {
         const sectionSelector = document.getElementById('sectionSelector');
+        if (!sectionSelector) return;
+
+        const sections = this.getSectionsForDepartment(selectedDept);
+        sectionSelector.innerHTML = '';
+
+        if (sections.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No sections available';
+            opt.disabled = true;
+            opt.selected = true;
+            sectionSelector.appendChild(opt);
+            this.currentTimetableSection = '';
+            return;
+        }
+
+        sections.forEach(sec => {
+            const opt = document.createElement('option');
+            opt.value = sec;
+            opt.textContent = sec;
+            if (sec === this.currentTimetableSection) {
+                opt.selected = true;
+            }
+            sectionSelector.appendChild(opt);
+        });
+
+        // If current section does not belong to selected department, select first section
+        if (!sections.includes(this.currentTimetableSection)) {
+            this.currentTimetableSection = sections[0];
+            sectionSelector.value = sections[0];
+            localStorage.setItem('zabcal_selected_section', this.currentTimetableSection);
+        }
+    }
+
+    initTimetable() {
+        const departmentSelector = document.getElementById('departmentSelector');
+        const sectionSelector = document.getElementById('sectionSelector');
+        const deptBadge = document.getElementById('timetableDepartmentBadge');
         const sessionBadge = document.getElementById('timetableSessionBadge');
         const lastUpdatedText = document.getElementById('timetableLastUpdatedText');
         const searchInput = document.getElementById('timetableSearchInput');
@@ -1720,24 +1967,47 @@ class UIManager {
             lastUpdatedText.textContent = timetableData.lastUpdated;
         }
 
-        const sections = Object.keys(timetableData.sections || {});
-        if (sectionSelector && sections.length > 0) {
-            sectionSelector.innerHTML = '';
-            sections.forEach(sec => {
+        const departments = timetableData.departments || ["Computer Science", "Management Sciences", "Media Science"];
+
+        // Validate and sync active department
+        if (!departments.includes(this.currentTimetableDepartment)) {
+            this.currentTimetableDepartment = this.getDepartmentForSection(this.currentTimetableSection) || departments[0];
+            localStorage.setItem('zabcal_selected_department', this.currentTimetableDepartment);
+        }
+
+        // Initialize Department Dropdown
+        if (departmentSelector) {
+            departmentSelector.innerHTML = '';
+            departments.forEach(dept => {
                 const opt = document.createElement('option');
-                opt.value = sec;
-                opt.textContent = sec;
-                if (sec === this.currentTimetableSection) {
+                opt.value = dept;
+                opt.textContent = dept;
+                if (dept === this.currentTimetableDepartment) {
                     opt.selected = true;
                 }
-                sectionSelector.appendChild(opt);
+                departmentSelector.appendChild(opt);
             });
 
-            if (!sections.includes(this.currentTimetableSection)) {
-                this.currentTimetableSection = sections[0];
-                sectionSelector.value = sections[0];
-            }
+            departmentSelector.addEventListener('change', (e) => {
+                this.currentTimetableDepartment = e.target.value;
+                localStorage.setItem('zabcal_selected_department', this.currentTimetableDepartment);
+                if (deptBadge) {
+                    deptBadge.textContent = this.currentTimetableDepartment;
+                }
+                this.populateSectionOptions(this.currentTimetableDepartment);
+                this.renderTimetableInteractive();
+                this.renderPDFPreview();
+            });
+        }
 
+        if (deptBadge) {
+            deptBadge.textContent = this.currentTimetableDepartment;
+        }
+
+        // Initialize Section Dropdown based on selected department
+        this.populateSectionOptions(this.currentTimetableDepartment);
+
+        if (sectionSelector) {
             sectionSelector.addEventListener('change', (e) => {
                 this.currentTimetableSection = e.target.value;
                 localStorage.setItem('zabcal_selected_section', this.currentTimetableSection);
@@ -1774,39 +2044,22 @@ class UIManager {
 
                 dayTabs.querySelectorAll('.timetable-day-pill').forEach(btn => {
                     const isSelected = (btn.dataset.day || 'ALL') === this.currentTimetableDayFilter;
-                    if (isSelected) {
-                        btn.className = 'timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-primary text-white shadow-sm shrink-0 cursor-pointer';
-                    } else {
-                        btn.className = 'timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer';
-                    }
+                    btn.className = isSelected
+                        ? 'timetable-day-pill active px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer snap-start'
+                        : 'timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start';
                 });
 
                 this.renderTimetableInteractive();
             });
         }
 
-        const interactiveView = document.getElementById('timetableInteractiveView');
-        const docPreviewView = document.getElementById('timetableDocPreviewView');
-
         if (btnViewModeInteractive && btnViewModePDF) {
             btnViewModeInteractive.addEventListener('click', () => {
-                this.currentTimetableViewMode = 'interactive';
-                interactiveView?.classList.remove('hidden');
-                docPreviewView?.classList.add('hidden');
-
-                btnViewModeInteractive.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer';
-                btnViewModePDF.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer';
-                this.renderTimetableInteractive();
+                this.setTimetableViewMode('interactive');
             });
 
             btnViewModePDF.addEventListener('click', () => {
-                this.currentTimetableViewMode = 'pdf';
-                interactiveView?.classList.add('hidden');
-                docPreviewView?.classList.remove('hidden');
-
-                btnViewModePDF.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer';
-                btnViewModeInteractive.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer';
-                this.renderPDFPreview();
+                this.setTimetableViewMode('pdf');
             });
         }
 
@@ -1817,8 +2070,42 @@ class UIManager {
             });
         }
 
-        this.renderTimetableInteractive();
-        this.renderPDFPreview();
+        // Apply initial view mode and render
+        this.setTimetableViewMode(this.currentTimetableViewMode);
+    }
+
+    setTimetableViewMode(mode) {
+        this.currentTimetableViewMode = mode;
+        localStorage.setItem('zabcal_timetable_view_mode', mode);
+
+        const interactiveView = document.getElementById('timetableInteractiveView');
+        const docPreviewView = document.getElementById('timetableDocPreviewView');
+        const btnViewModeInteractive = document.getElementById('btnViewModeInteractive');
+        const btnViewModePDF = document.getElementById('btnViewModePDF');
+
+        if (mode === 'interactive') {
+            interactiveView?.classList.remove('hidden');
+            docPreviewView?.classList.add('hidden');
+
+            if (btnViewModeInteractive) {
+                btnViewModeInteractive.className = 'timetable-view-mode-btn active flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer';
+            }
+            if (btnViewModePDF) {
+                btnViewModePDF.className = 'timetable-view-mode-btn flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer';
+            }
+            this.renderTimetableInteractive();
+        } else {
+            interactiveView?.classList.add('hidden');
+            docPreviewView?.classList.remove('hidden');
+
+            if (btnViewModePDF) {
+                btnViewModePDF.className = 'timetable-view-mode-btn active flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer';
+            }
+            if (btnViewModeInteractive) {
+                btnViewModeInteractive.className = 'timetable-view-mode-btn flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer';
+            }
+            this.renderPDFPreview();
+        }
     }
 
     renderTimetableMetrics(classes) {
@@ -1837,7 +2124,14 @@ class UIManager {
 
         const distinctDays = new Set(classes.map(c => c.day));
         const totalSessions = classes.length;
-        const totalCredits = classes.reduce((sum, c) => sum + (c.creditHours || 0), 0);
+        // Deduplicate courses by code so a 3-credit course meeting twice isn't counted as 6
+        const uniqueCourses = new Map();
+        classes.forEach(c => {
+            if (c.code && !uniqueCourses.has(c.code)) {
+                uniqueCourses.set(c.code, c.creditHours || 0);
+            }
+        });
+        const totalCredits = Array.from(uniqueCourses.values()).reduce((sum, cr) => sum + cr, 0);
         const distinctVenues = new Set(classes.map(c => c.venue).filter(Boolean));
 
         if (activeDaysEl) activeDaysEl.textContent = `${distinctDays.size} Days`;
@@ -1904,93 +2198,110 @@ class UIManager {
             const isToday = day.toLowerCase() === todayName.toLowerCase();
             const dayCredits = dayClasses.reduce((s, c) => s + (c.creditHours || 0), 0);
 
-            // 1. Desktop Cards (Grid Layout)
+            // 1. Desktop Cards (iOS Grid Layout)
             let desktopCardsHTML = '';
             dayClasses.forEach(c => {
+                const isLab = !!c.isLab;
                 desktopCardsHTML += `
-                    <div class="ui-card group p-4 sm:p-5 rounded-2xl bg-surface-container border border-outline-variant/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all flex flex-col justify-between gap-3 relative overflow-hidden">
+                    <div class="timetable-event-card ui-card group p-4 sm:p-5 rounded-2xl transition-all flex flex-col justify-between gap-3 relative overflow-hidden">
                         <div class="flex items-start justify-between gap-2">
-                            <span class="text-[10px] uppercase font-black tracking-widest px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                                ${c.code || 'COURSE'}
+                            <span class="timetable-course-badge text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-lg">
+                                ${escapeHtml(c.code) || 'COURSE'}
                             </span>
                             <div class="flex items-center gap-1.5">
-                                ${c.isLab ? `<span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Lab</span>` : ''}
-                                <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/20">
+                                ${isLab ? `<span class="timetable-lab-badge text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Lab</span>` : ''}
+                                <span class="timetable-cr-badge text-[10px] font-bold px-2 py-0.5 rounded-full">
                                     ${c.creditHours ? c.creditHours + ' Cr' : '-'}
                                 </span>
                             </div>
                         </div>
                         <div>
-                            <h4 class="text-sm sm:text-base font-black text-on-surface group-hover:text-primary transition-colors leading-snug">
-                                ${c.courseName}
+                            <h4 class="text-sm sm:text-base font-bold leading-snug">
+                                ${escapeHtml(c.courseName)}
                             </h4>
-                            <div class="flex items-center gap-1.5 mt-2 text-xs font-bold text-on-surface-variant">
+                            <div class="flex items-center gap-1.5 mt-2 text-xs font-medium text-on-surface-variant">
                                 <span class="material-symbols-outlined text-[16px] text-primary">person</span>
-                                <span>${c.teacher || 'Not Assigned'}</span>
+                                <span>${escapeHtml(c.teacher) || 'Not Assigned'}</span>
                             </div>
                         </div>
-                        <div class="pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-bold gap-2 flex-wrap">
+                        <div class="pt-3 border-t border-outline-variant/15 flex items-center justify-between text-xs font-semibold gap-2 flex-wrap">
                             <div class="flex items-center gap-1.5 text-on-surface-variant">
                                 <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
-                                <span>${c.timing || '-'}</span>
+                                <span>${escapeHtml(c.timing) || '-'}</span>
                             </div>
-                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary font-black border border-outline-variant/20">
+                            <div class="timetable-venue-chip flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold">
                                 <span class="material-symbols-outlined text-[14px]">meeting_room</span>
-                                <span>${c.venue || '-'}</span>
+                                <span>${escapeHtml(c.venue) || '-'}</span>
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            // 2. Mobile Cards (Agenda Timeline Layout)
+            // 2. Mobile Cards (iOS Inset Grouped Event Cards)
             let mobileCardsHTML = '';
-            dayClasses.forEach((c, idx) => {
+            dayClasses.forEach((c) => {
+                const isLab = !!c.isLab;
                 mobileCardsHTML += `
-                    <div class="flex gap-4 p-4 rounded-2xl bg-surface-container border border-outline-variant/20 items-start relative group transition-all active:scale-[0.98]">
-                        <div class="shrink-0 w-16 text-right">
-                            <p class="text-[11px] font-black text-primary leading-tight">${c.timing || '-'}</p>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between gap-2 mb-1">
-                                <h4 class="text-sm font-bold text-on-surface truncate leading-tight">${c.courseName}</h4>
-                                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">${c.code}</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-on-surface-variant font-medium">
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px] text-primary">person</span>
-                                    ${c.teacher || 'Not Assigned'}
+                    <div class="timetable-event-card p-3.5 sm:p-4 rounded-2xl ${isLab ? 'border-l-[4px] border-l-amber-500' : 'border-l-[4px] border-l-primary'} transition-all active:scale-[0.99] flex flex-col gap-2.5 w-full min-w-0">
+                        <!-- Top Bar: iOS Time Pill, Lab & Course Badges -->
+                        <div class="flex items-center justify-between gap-2 flex-wrap min-w-0">
+                            <span class="timetable-time-pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shrink-0">
+                                <span class="material-symbols-outlined text-[15px]">schedule</span>
+                                <span class="tracking-tight">${escapeHtml(c.timing) || 'TBA'}</span>
+                            </span>
+                            <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                ${isLab ? `
+                                <span class="timetable-lab-badge inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                    <span class="material-symbols-outlined text-[12px]">science</span>
+                                    Lab
+                                </span>` : ''}
+                                <span class="timetable-course-badge text-[10px] font-bold uppercase px-2 py-0.5 rounded-md">
+                                    ${escapeHtml(c.code) || 'COURSE'}
                                 </span>
-                                <span class="hidden sm:inline text-outline-variant/40">•</span>
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px] text-primary">meeting_room</span>
-                                    ${c.venue || '-'}
+                                <span class="timetable-cr-badge text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                    ${c.creditHours ? c.creditHours + ' Cr' : '-'}
                                 </span>
-                                ${c.isLab ? `<span class="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold"><span class="material-symbols-outlined text-[14px]">science</span> Lab</span>` : ''}
                             </div>
                         </div>
-                        ${idx !== dayClasses.length - 1 ? `
-                        <div class="absolute -bottom-3 left-[34px] w-px h-3 bg-outline-variant/30"></div>
-                        ` : ''}
+
+                        <!-- Course Title -->
+                        <div class="min-w-0">
+                            <h4 class="text-[15px] font-bold leading-snug break-words">
+                                ${escapeHtml(c.courseName)}
+                            </h4>
+                        </div>
+
+                        <!-- Details Footer: Teacher & Venue -->
+                        <div class="pt-2 border-t border-outline-variant/15 flex items-center justify-between gap-2 text-xs font-medium min-w-0">
+                            <div class="flex items-center gap-1.5 text-on-surface-variant min-w-0 flex-1">
+                                <span class="material-symbols-outlined text-[16px] text-primary shrink-0">person</span>
+                                <span class="truncate">${escapeHtml(c.teacher) || 'Not Assigned'}</span>
+                            </div>
+                            <div class="timetable-venue-chip flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">meeting_room</span>
+                                <span>${escapeHtml(c.venue) || '-'}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
 
             html += `
-                <div class="space-y-3.5 anim-fade-up">
+                <div class="space-y-3 anim-fade-up">
                     <div class="flex items-center justify-between px-1">
-                        <div class="flex items-center gap-2.5">
-                            <h3 class="text-base sm:text-lg font-black text-on-surface">${day}</h3>
-                            <span class="text-[11px] font-bold text-on-surface-variant bg-surface-container px-2.5 py-0.5 rounded-full border border-outline-variant/20">
+                        <div class="flex items-center gap-2">
+                            <h3 class="timetable-day-header text-base sm:text-lg font-bold tracking-tight">${day}</h3>
+                            <span class="timetable-day-badge text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
                                 ${dayClasses.length} ${dayClasses.length === 1 ? 'lecture' : 'lectures'} • ${dayCredits} Cr. Hrs
                             </span>
-                            ${isToday ? `<span class="px-2.5 py-0.5 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-wider shadow-sm">Today</span>` : ''}
+                            ${isToday ? `<span class="px-2.5 py-0.5 rounded-full bg-primary text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">Today</span>` : ''}
                         </div>
                     </div>
                     <div class="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         ${desktopCardsHTML}
                     </div>
-                    <div class="md:hidden flex flex-col gap-4">
+                    <div class="md:hidden flex flex-col gap-3">
                         ${mobileCardsHTML}
                     </div>
                 </div>
@@ -2074,6 +2385,7 @@ class UIManager {
                 <!-- Section Title & Accent Line -->
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h2 style="display: inline-block; font-size: 38px; font-weight: 900; color: #1e88e5; letter-spacing: 0.02em; margin: 0; padding: 0 12px;">${section}</h2>
+                    <div style="font-size: 13px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">Department of ${this.currentTimetableDepartment || 'Computer Science'}</div>
                 </div>
                 <div style="height: 4px; background: linear-gradient(90deg, #27187e 0%, #1e88e5 100%); margin-bottom: 20px; border-radius: 2px;"></div>
 
@@ -2099,57 +2411,6 @@ class UIManager {
                 </div>
             </div>
         `;
-    }
-
-    exportTimetableToPDF() {
-        const container = document.getElementById('timetableExportArea');
-        const section = this.currentTimetableSection;
-        const btnDownload = document.getElementById('btnDownloadPDF');
-
-        if (!container || !section || typeof html2pdf === 'undefined') {
-            if (typeof html2pdf === 'undefined') {
-                this.showError('PDF library is still loading. Please try again in a moment.');
-            } else {
-                this.showError('Please select a valid section before generating PDF.');
-            }
-            return;
-        }
-
-        // Ensure the preview is freshly rendered before PDF conversion
-        this.renderPDFPreview();
-
-        const originalBtnHTML = btnDownload ? btnDownload.innerHTML : '';
-        if (btnDownload) {
-            btnDownload.disabled = true;
-            btnDownload.innerHTML = `
-                <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-                <span>Generating PDF...</span>
-            `;
-        }
-
-        const filename = `ZabCal_Timetable_${section}.pdf`;
-        const opt = {
-            margin: [0.2, 0.2, 0.2, 0.2],
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-        };
-
-        // Use html2pdf's promise chain for better error handling
-        html2pdf().set(opt).from(container).save().then(() => {
-            if (btnDownload) {
-                btnDownload.disabled = false;
-                btnDownload.innerHTML = originalBtnHTML;
-            }
-        }).catch(err => {
-            console.error('PDF generation error:', err);
-            if (btnDownload) {
-                btnDownload.disabled = false;
-                btnDownload.innerHTML = originalBtnHTML;
-            }
-            this.showError('Failed to generate PDF. See console for details.');
-        });
     }
 
 }

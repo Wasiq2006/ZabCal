@@ -76,7 +76,6 @@
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -139,9 +138,9 @@
                         "full": "0.75rem"
                     },
                     "fontFamily": {
-                        "headline": ["Inter"],
-                        "body": ["Inter"],
-                        "label": ["Inter"]
+                        "headline": ["-apple-system", "BlinkMacSystemFont", "SF Pro Display", "Inter", "sans-serif"],
+                        "body": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Inter", "sans-serif"],
+                        "label": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Inter", "sans-serif"]
                     }
                 },
             },
@@ -189,7 +188,10 @@
             width: 100%;
             max-width: 100%;
             overflow-x: hidden;
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Inter", -apple-system, system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-tap-highlight-color: transparent;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
@@ -707,34 +709,171 @@
             box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4) !important;
         }
 
-        /* Semester Details Centered Pop-Up Modal */
-        #semesterDetailsView.hidden {
+        /* Hidden states */
+        #semesterDetailsView.hidden,
+        #addSemesterModal.hidden {
             display: none !important;
         }
 
-        #semesterDetailsView {
-            background-color: rgba(7, 8, 14, 0.82) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
+        /* ===== Add Semester Modal (existing styles preserved) ===== */
+        #addSemesterModal {
+            background-color: rgba(6, 8, 16, 0.72) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
             z-index: 100 !important;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease !important;
         }
 
-        html.dark #semesterDetailsView {
-            background-color: rgba(3, 4, 10, 0.88) !important;
+        html.dark #addSemesterModal {
+            background-color: rgba(3, 4, 10, 0.82) !important;
         }
 
-        #semesterDetailsCard {
-            background-color: #ffffff !important;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
-            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+        #addSemesterModal.opacity-0 {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        #addSemesterModal:not(.opacity-0) {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        #addSemesterModalContent {
+            background: rgba(255, 255, 255, 0.94) !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
             will-change: transform, opacity;
         }
 
+        html.dark #addSemesterModalContent {
+            background: rgba(20, 21, 37, 0.95) !important;
+            border: 1px solid rgba(198, 192, 255, 0.14) !important;
+            box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+        }
+
+        #addSemesterModal.opacity-0 #addSemesterModalContent {
+            transform: scale(0.96) translateY(8px) !important;
+            opacity: 0 !important;
+        }
+
+        #addSemesterModal:not(.opacity-0) #addSemesterModalContent {
+            transform: scale(1) translateY(0) !important;
+            opacity: 1 !important;
+        }
+
+        /* ===== Modern Semester Details Modal ===== */
+
+        /* Overlay: base state (invisible, no interaction) */
+        #semesterDetailsView {
+            background: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            z-index: 100;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+            pointer-events: none;
+            transition: background 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                        backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                        -webkit-backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Desktop: center-aligned */
+        @media (min-width: 640px) {
+            #semesterDetailsView {
+                align-items: center;
+                padding: 1.5rem;
+            }
+        }
+
+        /* Overlay: active state (visible, interactive) */
+        #semesterDetailsView.sem-modal-active {
+            background: rgba(6, 8, 16, 0.48);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            pointer-events: auto;
+        }
+
+        html.dark #semesterDetailsView.sem-modal-active {
+            background: rgba(3, 4, 10, 0.62);
+        }
+
+        /* Card: base state — mobile bottom sheet (offscreen below) */
+        #semesterDetailsCard {
+            width: 100%;
+            max-height: 94vh;
+            border-radius: 28px 28px 0 0;
+            padding: 0.625rem 1.125rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-bottom: none;
+            box-shadow: 0 -20px 60px -12px rgba(0, 0, 0, 0.16),
+                        0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+            transform: translateY(105%);
+            transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform;
+        }
+
+        /* Card: desktop centered (offscreen: scaled down + faded) */
+        @media (min-width: 640px) {
+            #semesterDetailsCard {
+                max-width: 660px;
+                max-height: 88vh;
+                border-radius: 28px;
+                padding: 1.75rem;
+                border: 1px solid rgba(0, 0, 0, 0.06);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                box-shadow: 0 32px 80px -20px rgba(0, 0, 0, 0.2),
+                            0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+                transform: scale(0.88) translateY(30px);
+                opacity: 0;
+                transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                            opacity 0.35s ease;
+            }
+        }
+
+        /* Card: active on mobile */
+        #semesterDetailsView.sem-modal-active #semesterDetailsCard {
+            transform: translateY(0);
+        }
+
+        /* Card: active on desktop */
+        @media (min-width: 640px) {
+            #semesterDetailsView.sem-modal-active #semesterDetailsCard {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Card: dark mode */
         html.dark #semesterDetailsCard {
-            background-color: #141525 !important;
-            border-color: rgba(198, 192, 255, 0.18) !important;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65) !important;
+            background: rgba(18, 19, 34, 0.98);
+            border-color: rgba(198, 192, 255, 0.1);
+            box-shadow: 0 -20px 60px -12px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+        }
+
+        @media (min-width: 640px) {
+            html.dark #semesterDetailsCard {
+                box-shadow: 0 32px 80px -20px rgba(0, 0, 0, 0.7),
+                            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            }
+        }
+
+        /* Stat metric pillars */
+        .sem-stat-pillar {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background-color 0.25s ease;
+        }
+        .sem-stat-pillar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -6px rgba(39, 24, 126, 0.12);
+        }
+        html.dark .sem-stat-pillar:hover {
+            box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.5);
         }
 
         /* Number input spinner arrows: Crisp white in both white and dark themes */
@@ -809,7 +948,6 @@
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7) !important;
         }
 
-        html.dark #btnSaveCurrent,
         html.dark #btnConfirmSem {
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
             color: #ffffff !important;
@@ -817,15 +955,22 @@
             box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35) !important;
         }
 
-        html.dark #btnSaveCurrent span,
-        html.dark #btnConfirmSem span {
-            color: #ffffff !important;
+        html.dark #btnSaveCurrent {
+            background: rgba(30, 27, 75, 0.4) !important;
+            border-color: rgba(129, 140, 248, 0.35) !important;
+        }
+        html.dark #btnSaveCurrent:hover {
+            border-color: rgba(165, 180, 252, 0.7) !important;
+            background: rgba(49, 46, 129, 0.5) !important;
         }
 
         html.dark #btnStartFresh {
-            background-color: #22243a !important;
+            background-color: rgba(255, 255, 255, 0.04) !important;
             border-color: rgba(198, 192, 255, 0.15) !important;
-            color: #f1f1fa !important;
+        }
+        html.dark #btnStartFresh:hover {
+            border-color: rgba(198, 192, 255, 0.4) !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Links */
@@ -835,6 +980,308 @@
 
         html.dark a.hover\:underline:hover {
             color: #e4dfff !important;
+        }
+
+        /* ============================================================
+           TIMETABLE COMPONENT STYLING & DARK THEME SYSTEM
+           ============================================================ */
+        /* Light Theme Defaults */
+        .timetable-toolbar-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(200, 196, 212, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .timetable-input-wrapper {
+            background-color: #f3f3fb;
+            border: 1px solid rgba(200, 196, 212, 0.45);
+        }
+
+        .timetable-segmented-container {
+            background: rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .timetable-view-mode-btn {
+            color: #474552;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .timetable-view-mode-btn.active {
+            background-color: #ffffff;
+            color: #12005d;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .timetable-view-mode-btn.active span {
+            color: #12005d;
+        }
+
+        .timetable-metric-card {
+            background-color: #ffffff;
+            border: 1px solid rgba(200, 196, 212, 0.35);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .timetable-metric-card p {
+            color: #191b21;
+        }
+
+        .timetable-metric-card #metricTotalSessions {
+            color: #12005d;
+        }
+
+        .metric-icon-blue { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+        .metric-icon-primary { background: rgba(18, 0, 93, 0.08); color: #12005d; }
+        .metric-icon-emerald { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .metric-icon-purple { background: rgba(168, 85, 247, 0.1); color: #7c3aed; }
+
+        .timetable-day-pill {
+            background: #ededf5;
+            color: #474552;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .timetable-day-pill.active {
+            background: #12005d;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(18, 0, 93, 0.25);
+        }
+
+        .timetable-day-pill:not(.active):hover {
+            background: #e2e2ea;
+            color: #191b21;
+        }
+
+        .timetable-event-card {
+            background-color: #ffffff;
+            border: 1px solid rgba(200, 196, 212, 0.35);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .timetable-time-pill {
+            background: rgba(18, 0, 93, 0.08);
+            color: #12005d;
+            border: 1px solid rgba(18, 0, 93, 0.12);
+        }
+
+        .timetable-lab-badge {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .timetable-course-badge {
+            background: #ededf5;
+            color: #12005d;
+            border: 1px solid rgba(18, 0, 93, 0.15);
+        }
+
+        .timetable-cr-badge {
+            background: #ededf5;
+            color: #474552;
+            border: 1px solid rgba(200, 196, 212, 0.3);
+        }
+
+        .timetable-venue-chip {
+            background: #f3f3fb;
+            color: #191b21;
+            border: 1px solid rgba(200, 196, 212, 0.35);
+        }
+
+        .timetable-day-badge {
+            background: #ededf5;
+            color: #474552;
+            border: 1px solid rgba(200, 196, 212, 0.3);
+        }
+
+        /* Timetable Dark Mode Overrides */
+        html.dark #timetableView {
+            background-color: #0d0e17 !important;
+        }
+
+        html.dark .timetable-toolbar-card,
+        html.dark #timetableToolbarCard {
+            background: rgba(22, 23, 38, 0.85) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(198, 192, 255, 0.14) !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        html.dark .timetable-input-wrapper {
+            background-color: #121320 !important;
+            border: 1px solid rgba(198, 192, 255, 0.16) !important;
+        }
+
+        html.dark .timetable-input-wrapper:focus-within {
+            border-color: #c6c0ff !important;
+            box-shadow: 0 0 0 2px rgba(198, 192, 255, 0.22) !important;
+        }
+
+        html.dark #departmentSelector,
+        html.dark #sectionSelector,
+        html.dark #timetableSearchInput {
+            color: #f1f1fa !important;
+            background-color: transparent !important;
+        }
+
+        html.dark #timetableSearchInput::placeholder {
+            color: #6e6a80 !important;
+        }
+
+        html.dark #departmentSelector option,
+        html.dark #sectionSelector option {
+            background-color: #18192b !important;
+            color: #f1f1fa !important;
+        }
+
+        html.dark .timetable-segmented-container {
+            background: #0f101b !important;
+            border: 1px solid rgba(198, 192, 255, 0.14) !important;
+        }
+
+        html.dark .timetable-view-mode-btn {
+            color: #a8a5b8 !important;
+            background: transparent !important;
+        }
+
+        html.dark .timetable-view-mode-btn:not(.active):hover {
+            color: #f1f1fa !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        html.dark .timetable-view-mode-btn.active {
+            background: linear-gradient(135deg, #312185 0%, #4333a8 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(198, 192, 255, 0.3) !important;
+            box-shadow: 0 2px 12px rgba(39, 24, 126, 0.45) !important;
+        }
+
+        html.dark .timetable-view-mode-btn.active span {
+            color: #ffffff !important;
+        }
+
+        html.dark .timetable-metric-card,
+        html.dark #timetableMetricsGrid > div {
+            background-color: #161729 !important;
+            border: 1px solid rgba(198, 192, 255, 0.14) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        html.dark .timetable-metric-card p,
+        html.dark #timetableMetricsGrid p {
+            color: #f1f1fa !important;
+        }
+
+        html.dark .timetable-metric-card #metricTotalSessions,
+        html.dark #timetableMetricsGrid #metricTotalSessions {
+            color: #c6c0ff !important;
+        }
+
+        html.dark .metric-icon-blue { background: rgba(59, 130, 246, 0.18) !important; color: #93c5fd !important; }
+        html.dark .metric-icon-primary { background: rgba(198, 192, 255, 0.18) !important; color: #c6c0ff !important; }
+        html.dark .metric-icon-emerald { background: rgba(16, 185, 129, 0.18) !important; color: #6ee7b7 !important; }
+        html.dark .metric-icon-purple { background: rgba(168, 85, 247, 0.18) !important; color: #d8b4fe !important; }
+
+        html.dark .timetable-day-pill {
+            background: #161729 !important;
+            color: #a8a5b8 !important;
+            border: 1px solid rgba(198, 192, 255, 0.12) !important;
+        }
+
+        html.dark .timetable-day-pill:not(.active):hover {
+            color: #f1f1fa !important;
+            background: rgba(198, 192, 255, 0.08) !important;
+            border-color: rgba(198, 192, 255, 0.22) !important;
+        }
+
+        html.dark .timetable-day-pill.active {
+            background: linear-gradient(135deg, #312185 0%, #4333a8 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(198, 192, 255, 0.35) !important;
+            box-shadow: 0 2px 12px rgba(39, 24, 126, 0.45) !important;
+        }
+
+        html.dark .timetable-event-card {
+            background-color: #161729 !important;
+            border: 1px solid rgba(198, 192, 255, 0.14) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        html.dark .timetable-event-card:hover {
+            border-color: rgba(198, 192, 255, 0.35) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        html.dark .timetable-event-card h4 {
+            color: #f1f1fa !important;
+        }
+
+        html.dark .timetable-time-pill {
+            background: rgba(198, 192, 255, 0.15) !important;
+            color: #c6c0ff !important;
+            border: 1px solid rgba(198, 192, 255, 0.25) !important;
+        }
+
+        html.dark .timetable-lab-badge {
+            background: rgba(245, 158, 11, 0.18) !important;
+            color: #fbbf24 !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+
+        html.dark .timetable-course-badge {
+            background-color: #1e2034 !important;
+            color: #c6c0ff !important;
+            border: 1px solid rgba(198, 192, 255, 0.2) !important;
+        }
+
+        html.dark .timetable-cr-badge {
+            background-color: #18192b !important;
+            color: #a8a5b8 !important;
+            border: 1px solid rgba(198, 192, 255, 0.12) !important;
+        }
+
+        html.dark .timetable-venue-chip {
+            background-color: #1f2035 !important;
+            color: #f1f1fa !important;
+            border: 1px solid rgba(198, 192, 255, 0.15) !important;
+        }
+
+        html.dark .timetable-venue-chip span {
+            color: #f1f1fa !important;
+        }
+
+        html.dark .timetable-day-header {
+            color: #f1f1fa !important;
+        }
+
+        html.dark .timetable-day-badge {
+            background-color: #18192b !important;
+            color: #a8a5b8 !important;
+            border: 1px solid rgba(198, 192, 255, 0.12) !important;
+        }
+
+        html.dark #timetableDepartmentBadge,
+        html.dark #timetableLastUpdatedBadge {
+            background-color: #161729 !important;
+            color: #d1cfe0 !important;
+            border-color: rgba(198, 192, 255, 0.18) !important;
+        }
+
+        html.dark #timetableSessionBadge {
+            background: rgba(198, 192, 255, 0.14) !important;
+            color: #c6c0ff !important;
+            border-color: rgba(198, 192, 255, 0.25) !important;
+        }
+
+        html.dark #timetableDocPreviewView .bg-surface-container {
+            background-color: #141525 !important;
+            border-color: rgba(198, 192, 255, 0.15) !important;
         }
 
         /* ===== ANIMATIONS ===== */
@@ -977,11 +1424,6 @@
 
         .grade-badge-pulse {
             animation: gradeBadgePop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        #semesterDetailsCard {
-            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s ease;
-            will-change: transform, opacity;
         }
 
         #detailSemCourses tr {
@@ -1264,7 +1706,7 @@
         </div>
     </header>
 
-    <div class="flex">
+    <div class="flex w-full min-w-0 max-w-full overflow-x-hidden">
         <!-- Main Content Area -->
         <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen" id="calculatorView">
             <div class="max-w-5xl mx-auto">
@@ -1700,133 +2142,6 @@
                     <!-- Semesters rendered here -->
                 </div>
 
-                <!-- Semester Details Pop-Up Modal (Clean Centered Modal) -->
-                <div id="semesterDetailsView"
-                    class="hidden fixed inset-0 z-[100] bg-[#07080e]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 transition-opacity duration-250 ease-out">
-
-                    <div id="semesterDetailsCard"
-                        class="w-full max-w-2xl max-h-[85vh] bg-surface-container rounded-3xl p-4 sm:p-6 border border-outline-variant/20 shadow-2xl flex flex-col overflow-hidden transform scale-100 opacity-100">
-
-                        <!-- Details Header -->
-                        <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span id="detailSemBadge"
-                                        class="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Semester</span>
-                                </div>
-                                <h3 id="detailSemTitle"
-                                    class="text-lg sm:text-2xl font-black text-on-surface tracking-tight break-words">
-                                    Fall 2025 (Semester 1)
-                                </h3>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0 pt-0.5">
-                                <button id="btnEditSemMarks"
-                                    class="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm active:scale-95"
-                                    title="Edit course marks in this semester">
-                                    <span class="material-symbols-outlined text-base">edit</span>
-                                    <span class="hidden xs:inline">Edit Marks</span>
-                                </button>
-                                <button id="btnCloseDetails"
-                                    class="p-2 sm:p-2.5 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant hover:text-on-surface shrink-0 hover:rotate-90 hover:scale-105 active:scale-95 bg-surface-container-high/60 sm:bg-transparent duration-200 cursor-pointer"
-                                    title="Close details">
-                                    <span class="material-symbols-outlined text-xl">close</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Compact 3-Pillar Metrics Row with Animated Entrance -->
-                        <div
-                            class="grid grid-cols-3 gap-2 my-2 sm:my-3 p-2.5 bg-surface-container-low rounded-2xl border border-outline-variant/15 shrink-0">
-                            <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
-                                style="animation-delay: 90ms;">
-                                <span
-                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[13px] text-primary">stars</span> SGPA
-                                </span>
-                                <strong id="detailSemGPA"
-                                    class="text-base sm:text-lg font-black text-primary mt-0.5">0.00</strong>
-                            </div>
-                            <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
-                                style="animation-delay: 150ms;">
-                                <span
-                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[13px] text-primary">school</span>
-                                    Credits
-                                </span>
-                                <strong id="detailSemCredits"
-                                    class="text-base sm:text-lg font-black text-on-surface mt-0.5">0</strong>
-                            </div>
-                            <div id="detailSemCoursesCountBadge"
-                                class="sem-stat-pillar flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-default"
-                                style="animation-delay: 210ms;">
-                                <span
-                                    class="text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[13px] text-primary">menu_book</span>
-                                    Courses
-                                </span>
-                                <strong id="detailSemCoursesCount"
-                                    class="text-base sm:text-lg font-black text-on-surface mt-0.5">0</strong>
-                            </div>
-                        </div>
-
-                        <!-- Edit Marks Active Action Bar -->
-                        <div id="semEditActionBar"
-                            class="hidden mb-3 p-3 bg-primary/10 border border-primary/25 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
-                            <div class="flex items-center gap-2 text-xs font-bold text-primary">
-                                <span class="material-symbols-outlined text-lg">edit_note</span>
-                                <span>Editing marks. SGPA recalculates live.</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button id="btnCancelEditMarks" type="button"
-                                    class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-bold rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-all text-on-surface cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button id="btnSaveEditMarks" type="button"
-                                    class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-black rounded-xl bg-primary text-white hover:bg-primary-container shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
-                                    <span class="material-symbols-outlined text-base">check</span> Save Changes
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Desktop Table View (sm and above) with Smooth Isolated Touch Scroll -->
-                        <div class="hidden sm:block overflow-y-auto max-h-[46vh] pr-1" data-lenis-prevent>
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr
-                                        class="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20">
-                                        <th class="pb-3 font-bold">Course</th>
-                                        <th class="pb-3 font-bold text-center">Credits</th>
-                                        <th class="pb-3 font-bold text-center">Marks</th>
-                                        <th class="pb-3 font-bold text-right">Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="detailSemCourses"
-                                    class="text-sm font-medium divide-y divide-outline-variant/10">
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Mobile Cards List (< sm) with Smooth Isolated Touch Scroll -->
-                        <div id="detailSemCoursesMobile"
-                            class="sm:hidden flex flex-col gap-2.5 overflow-y-auto max-h-[48vh] pr-0.5 overscroll-contain"
-                            data-lenis-prevent>
-                        </div>
-
-                        <!-- Details Footer -->
-                        <div
-                            class="mt-3 pt-3 border-t border-outline-variant/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
-                            <p class="text-[11px] text-on-surface-variant font-medium text-center sm:text-left">
-                                Showing all recorded courses for this semester.
-                            </p>
-                            <button id="btnDeleteSemester"
-                                class="bg-error/10 text-error hover:bg-error/20 border border-error/20 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs shadow-sm active:scale-95">
-                                <span class="material-symbols-outlined text-sm">delete</span> Delete Semester
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
-
                 <!-- Footer -->
                 <footer
                     class="mt-16 sm:mt-24 pt-12 sm:pt-16 pb-8 sm:pb-12 flex flex-col items-center border-t border-primary/10">
@@ -1850,32 +2165,33 @@
         </main>
 
         <!-- Timetable View -->
-        <main class="flex-1 p-4 sm:p-8 md:p-12 pb-24 md:pb-12 min-h-screen hidden" id="timetableView">
-            <div class="max-w-6xl mx-auto">
-                <!-- Timetable Header Bar -->
-                <div class="flex items-start gap-4 mb-6 sm:mb-8 anim-fade-up">
-                    <button onclick="window.uiManager.navigateTo('calculator')"
-                        class="ui-button p-2 hover:bg-surface-container-low rounded-xl text-outline-variant hover:text-primary transition-all hover:scale-105 shrink-0 mt-1"
-                        title="Back to Calculator">
-                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
-                    </button>
-                    <div>
-                        <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span
-                                class="text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-black text-primary">Academic
-                                Schedule</span>
-                            <span class="text-outline-variant/40 text-xs">•</span>
+        <main class="flex-1 w-full max-w-full min-w-0 p-3.5 sm:p-8 md:p-12 pb-28 md:pb-12 min-h-screen overflow-x-hidden hidden" id="timetableView">
+            <div class="max-w-6xl mx-auto w-full min-w-0">
+                <!-- Timetable Header Bar: iOS Large Title Navigation -->
+                <div class="flex flex-col gap-2.5 mb-5 sm:mb-7 anim-fade-up">
+                    <!-- iOS Navigation Top Bar with back chevron and metadata pills -->
+                    <div class="flex items-center justify-between gap-2">
+                        <button onclick="window.uiManager.navigateTo('calculator')"
+                            class="inline-flex items-center gap-0.5 px-2.5 py-1.5 -ml-2 rounded-xl text-primary hover:bg-primary/10 active:scale-95 transition-all text-xs font-bold"
+                            title="Back to Calculator">
+                            <span class="material-symbols-outlined text-lg">chevron_left</span>
+                            <span>Calculator</span>
+                        </button>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-end">
                             <span id="timetableSessionBadge"
-                                class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Fall
-                                2026</span>
+                                class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Fall 2026</span>
+                            <span id="timetableDepartmentBadge"
+                                class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/25 truncate max-w-[140px] sm:max-w-none">Computer Science</span>
                         </div>
-                        <h2 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Timetable</h2>
-                        <div class="flex items-center gap-3 mt-1.5 flex-wrap">
-                            <p class="text-sm font-medium text-on-surface-variant">Class timings, teacher
-                                assignments, and lecture venues.</p>
+                    </div>
+                    <!-- iOS Large Title -->
+                    <div>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-on-surface tracking-tight">Timetable</h2>
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
+                            <p class="text-xs sm:text-sm font-medium text-on-surface-variant">Class timings, teacher assignments, and lecture venues.</p>
                             <span class="hidden sm:inline text-outline-variant/40">•</span>
                             <span id="timetableLastUpdatedBadge"
-                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-bold border border-outline-variant/25">
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] sm:text-[11px] font-bold border border-outline-variant/25">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span>Updated: <span id="timetableLastUpdatedText">September 8, 2026</span></span>
                             </span>
@@ -1883,159 +2199,180 @@
                     </div>
                 </div>
 
-                <!-- Interactive Toolbar: Section Selector, Search & View Switcher -->
-                <div
-                    class="glass-panel p-4 sm:p-5 rounded-2xl border border-outline-variant/20 shadow-sm mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-                        <!-- Section Dropdown -->
-                        <div class="relative min-w-[200px] sm:w-60">
-                            <label
-                                class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">Select
-                                Section</label>
-                            <div class="relative">
-                                <select id="sectionSelector"
-                                    class="w-full appearance-none bg-surface-container-high border border-outline-variant/30 text-on-surface text-sm font-bold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
-                                    <option value="" disabled selected>Choose Section</option>
-                                </select>
-                                <span
-                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+                <!-- Timetable Inset Grouped Toolbar: Department & Section Selector, Live Search & View Mode -->
+                <div id="timetableToolbarCard"
+                    class="timetable-toolbar-card p-3.5 sm:p-5 rounded-3xl mb-5 sm:mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 sm:gap-4 w-full min-w-0">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1 w-full min-w-0">
+                        <!-- Department & Section Selector -->
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                            <!-- Department Picker -->
+                            <div class="relative w-full sm:w-56 min-w-0">
+                                <label
+                                    class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Department</label>
+                                <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
+                                    <select id="departmentSelector"
+                                        class="w-full appearance-none bg-transparent text-on-surface text-xs sm:text-sm font-semibold px-3.5 py-2.5 pr-8 focus:outline-none cursor-pointer">
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Management Sciences">Management Sciences</option>
+                                        <option value="Media Science">Media Science</option>
+                                    </select>
+                                    <span
+                                        class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-lg pointer-events-none">unfold_more</span>
+                                </div>
+                            </div>
+
+                            <!-- Section Picker -->
+                            <div class="relative w-full sm:w-44 min-w-0">
+                                <label
+                                    class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Section</label>
+                                <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
+                                    <select id="sectionSelector"
+                                        class="w-full appearance-none bg-transparent text-on-surface text-xs sm:text-sm font-semibold px-3.5 py-2.5 pr-8 focus:outline-none cursor-pointer">
+                                        <option value="" disabled selected>Choose Section</option>
+                                    </select>
+                                    <span
+                                        class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-lg pointer-events-none">unfold_more</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Live Search Input -->
-                        <div class="relative flex-1">
+                        <!-- Live Search Bar -->
+                        <div class="relative flex-1 w-full min-w-0">
                             <label
-                                class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">Search
+                                class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Search
                                 Schedule</label>
-                            <div class="relative">
+                            <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
                                 <span
-                                    class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg pointer-events-none">search</span>
+                                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-lg pointer-events-none">search</span>
                                 <input type="text" id="timetableSearchInput"
-                                    placeholder="Filter by course, teacher, or venue..."
-                                    class="w-full bg-surface-container-high border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant/60 text-sm font-medium rounded-xl pl-10 pr-9 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                                    placeholder="Search course, teacher, or venue..."
+                                    class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/50 text-xs sm:text-sm font-medium pl-9 pr-8 py-2.5 focus:outline-none">
                                 <button id="btnClearTimetableSearch"
-                                    class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
-                                    <span class="material-symbols-outlined text-base">close</span>
+                                    class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                                    <span class="material-symbols-outlined text-base">cancel</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- View Mode Toggle (Interactive vs PDF Preview) -->
-                    <div class="flex flex-col sm:items-end gap-1 shrink-0">
+                    <!-- Segmented Control: View Mode Toggle -->
+                    <div class="flex flex-col sm:items-end gap-1 w-full sm:w-auto shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-outline-variant/20 min-w-0">
                         <label
-                            class="text-[9px] uppercase tracking-widest font-black text-on-surface-variant block mb-1">View
+                            class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1 sm:self-end">View
                             Mode</label>
-                        <div
-                            class="inline-flex p-1 bg-surface-container-high rounded-xl border border-outline-variant/20 self-start sm:self-auto">
+                        <div class="timetable-segmented-container grid grid-cols-2 p-1 rounded-2xl w-full sm:w-auto">
                             <button id="btnViewModeInteractive"
-                                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface cursor-pointer">
+                                class="timetable-view-mode-btn active flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer">
                                 <span class="material-symbols-outlined text-base">dashboard</span>
                                 <span>Interactive</span>
                             </button>
                             <button id="btnViewModePDF"
-                                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-white shadow-sm cursor-pointer">
+                                class="timetable-view-mode-btn flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer">
                                 <span class="material-symbols-outlined text-base">picture_as_pdf</span>
-                                <span>PDF Document</span>
+                                <span>PDF Doc</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4-Pillar Schedule Overview Metrics -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="timetableMetricsGrid">
-                    <div
-                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="material-symbols-outlined text-primary text-lg">calendar_today</span>
-                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Active
+                <!-- 4-Pillar Overview Metrics Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5 sm:mb-6 w-full min-w-0" id="timetableMetricsGrid">
+                    <div class="timetable-metric-card rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5 min-w-0">
+                            <div class="metric-icon-blue w-6 h-6 rounded-full flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                            </div>
+                            <span class="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-on-surface-variant/70 truncate">Active
                                 Days</span>
                         </div>
-                        <p id="metricActiveDays" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">-
+                        <p id="metricActiveDays" class="text-xl sm:text-2xl font-bold tracking-tight truncate">-
                         </p>
                     </div>
-                    <div
-                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="material-symbols-outlined text-primary text-lg">schedule</span>
-                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Total
+                    <div class="timetable-metric-card rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5 min-w-0">
+                            <div class="metric-icon-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">schedule</span>
+                            </div>
+                            <span class="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-on-surface-variant/70 truncate">Total
                                 Sessions</span>
                         </div>
-                        <p id="metricTotalSessions" class="text-xl sm:text-2xl font-black text-primary tracking-tight">-
+                        <p id="metricTotalSessions" class="text-xl sm:text-2xl font-bold tracking-tight truncate">-
                         </p>
                     </div>
-                    <div
-                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="material-symbols-outlined text-primary text-lg">school</span>
-                            <span class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Credit
+                    <div class="timetable-metric-card rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5 min-w-0">
+                            <div class="metric-icon-emerald w-6 h-6 rounded-full flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">school</span>
+                            </div>
+                            <span class="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-on-surface-variant/70 truncate">Credit
                                 Hours</span>
                         </div>
-                        <p id="metricCreditHours" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">
+                        <p id="metricCreditHours" class="text-xl sm:text-2xl font-bold tracking-tight truncate">
                             -</p>
                     </div>
-                    <div
-                        class="bg-surface-container rounded-2xl p-4 border border-outline-variant/20 flex flex-col justify-center">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="material-symbols-outlined text-primary text-lg">meeting_room</span>
+                    <div class="timetable-metric-card rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5 min-w-0">
+                            <div class="metric-icon-purple w-6 h-6 rounded-full flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">meeting_room</span>
+                            </div>
                             <span
-                                class="text-[10px] uppercase tracking-wider font-black text-on-surface-variant">Venues</span>
+                                class="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-on-surface-variant/70 truncate">Venues</span>
                         </div>
-                        <p id="metricVenuesCount" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">
+                        <p id="metricVenuesCount" class="text-xl sm:text-2xl font-bold tracking-tight truncate">
                             -</p>
                     </div>
                 </div>
 
                 <!-- VIEW MODE 1: INTERACTIVE SCHEDULE VIEW -->
-                <div id="timetableInteractiveView" class="hidden space-y-6">
-                    <!-- Day Filter Pills -->
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="timetableDayTabs">
+                <div id="timetableInteractiveView" class="space-y-5 sm:space-y-6 w-full min-w-0">
+                    <!-- Day Filter Capsules -->
+                    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 pt-0.5 no-scrollbar snap-x touch-pan-x w-full max-w-full min-w-0" id="timetableDayTabs">
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-primary text-white shadow-sm shrink-0 cursor-pointer"
+                            class="timetable-day-pill active px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="ALL">
                             All Days
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Monday">
                             Monday
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Tuesday">
                             Tuesday
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Wednesday">
                             Wednesday
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Thursday">
                             Thursday
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Friday">
                             Friday
                         </button>
                         <button
-                            class="timetable-day-pill px-4 py-2 rounded-xl text-xs font-bold transition-all bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer"
+                            class="timetable-day-pill px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer snap-start"
                             data-day="Saturday">
                             Saturday
                         </button>
                     </div>
 
                     <!-- Interactive Day Groups Container -->
-                    <div id="timetableCardsContainer" class="space-y-6">
+                    <div id="timetableCardsContainer" class="space-y-5 sm:space-y-6 w-full min-w-0">
                         <!-- Populated dynamically via renderInteractiveTimetable -->
                     </div>
                 </div>
 
                 <!-- VIEW MODE 2: PDF DOCUMENT PREVIEW -->
-                <div id="timetableDocPreviewView" class="space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
+                <div id="timetableDocPreviewView" class="hidden space-y-4 w-full min-w-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
                         <div>
                             <p class="text-xs sm:text-sm font-bold text-on-surface flex items-center gap-1.5">
                                 <span class="material-symbols-outlined text-base text-primary">visibility</span>
@@ -2044,18 +2381,24 @@
                             <span class="text-[11px] text-on-surface-variant/70">Exact preview of the printable schedule. Print directly or save as vector PDF.</span>
                         </div>
                         <button id="btnPrintTimetable"
-                            class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-primary-container shadow-md transition-all active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
+                            class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-primary-container shadow-md transition-all active:scale-95 cursor-pointer w-full sm:w-auto shrink-0"
                             title="Print Timetable (Save as PDF)">
                             <span class="material-symbols-outlined text-lg">print</span>
                             <span>Print Timetable</span>
                         </button>
                     </div>
 
+                    <!-- Mobile Tip when viewing PDF Preview -->
+                    <div class="sm:hidden flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                        <span class="material-symbols-outlined text-base shrink-0">touch_app</span>
+                        <span>Swipe horizontally to view the full document, or switch to <strong>Interactive</strong> mode for mobile cards.</span>
+                    </div>
+
                     <!-- Scrollable Container for PDF Canvas -->
-                    <div class="bg-surface-container rounded-3xl p-3 sm:p-6 border border-outline-variant/30 shadow-sm overflow-x-auto"
+                    <div class="bg-surface-container rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-outline-variant/30 shadow-sm overflow-x-auto w-full max-w-full min-w-0"
                         data-lenis-prevent>
                         <div id="timetableExportArea"
-                            class="min-w-[850px] max-w-[1000px] bg-white text-black p-8 rounded-xl shadow-[0_0_25px_rgba(0,0,0,0.08)] mx-auto relative overflow-hidden">
+                            class="w-[850px] max-w-none bg-white text-black p-4 sm:p-8 rounded-xl shadow-[0_0_25px_rgba(0,0,0,0.08)] mx-auto relative overflow-hidden">
                             <!-- Dynamic PDF layout injected here -->
                         </div>
                     </div>
@@ -2161,7 +2504,7 @@
                                         <span
                                             class="text-xs font-bold text-primary cursor-pointer hover:text-primary-container transition-all flex items-center gap-1 group"
                                             onclick="showVersionDetails()">
-                                            Version 2.1 <span
+                                            Version 2.3.0 <span
                                                 class="material-symbols-outlined text-[14px] transition-transform group-hover:rotate-12">info</span>
                                         </span>
                                     </div>
@@ -2282,119 +2625,186 @@
             </div>
         </main>
 
-        <!-- Mobile Bottom Navigation -->
+        <!-- Mobile Bottom Navigation: iOS Tab Bar -->
         <nav id="mobileBottomNav"
-            class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30 px-2 py-2 safe-bottom">
+            class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-surface-container-lowest/85 dark:bg-[#0d0e17]/90 backdrop-blur-2xl border-t border-black/[0.07] dark:border-white/[0.08] px-3 pt-1.5 safe-bottom shadow-[0_-4px_24px_rgba(0,0,0,0.03)]">
             <div class="grid grid-cols-4 gap-1 max-w-md mx-auto">
-                <a class="flex flex-col items-center justify-center py-2 rounded-xl bg-primary/10 text-primary font-bold transition-all active"
+                <a class="flex flex-col items-center justify-center py-1.5 rounded-2xl bg-primary/10 text-primary font-bold transition-all active active:scale-90 select-none"
                     data-nav-view="calculator" href="#calculator"
                     onclick="window.uiManager.navigateTo('calculator'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">calculate</span>
-                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Calc</span>
+                    <span class="material-symbols-outlined text-[22px]">calculate</span>
+                    <span class="text-[10px] font-semibold tracking-tight mt-0.5">Calc</span>
                 </a>
-                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                <a class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all active:scale-90 select-none"
                     data-nav-view="semesters" href="#semesters"
                     onclick="window.uiManager.navigateTo('semesters'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">school</span>
-                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Semesters</span>
+                    <span class="material-symbols-outlined text-[22px]">school</span>
+                    <span class="text-[10px] font-semibold tracking-tight mt-0.5">Semesters</span>
                 </a>
-                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                <a class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all active:scale-90 select-none"
                     data-nav-view="timetable" href="#timetable"
                     onclick="window.uiManager.navigateTo('timetable'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">calendar_month</span>
-                    <span class="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Timetable</span>
+                    <span class="material-symbols-outlined text-[22px]">calendar_month</span>
+                    <span class="text-[10px] font-semibold tracking-tight mt-0.5">Timetable</span>
                 </a>
-                <a class="flex flex-col items-center justify-center py-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all"
+                <a class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-on-surface-variant hover:text-primary hover:bg-primary/10 font-bold transition-all active:scale-90 select-none"
                     data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
-                    <span class="material-symbols-outlined text-[20px]">info</span>
-                    <span class="text-[10px] uppercase tracking-wider">About</span>
+                    <span class="material-symbols-outlined text-[22px]">info</span>
+                    <span class="text-[10px] font-semibold tracking-tight mt-0.5">About</span>
                 </a>
             </div>
         </nav>
 
         <div id="addSemesterModal"
-            class="fixed inset-0 bg-[#0f0f1a]/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-            <div class="bg-surface-container rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
+            class="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 opacity-0 pointer-events-none transition-all duration-300 ease-out hidden">
+            <div class="rounded-[28px] sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-7 flex flex-col gap-5 transform scale-95 opacity-0 transition-all duration-300 ease-out"
                 id="addSemesterModalContent" data-lenis-prevent>
-                <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-black text-on-surface">Add Semester</h3>
-                    <button id="btnCloseAddModal" class="text-outline-variant hover:text-error transition-colors">
-                        <span class="material-symbols-outlined">close</span>
+                
+                <!-- Mobile Sheet Grab Handle -->
+                <div class="w-12 h-1 bg-outline-variant/30 dark:bg-white/20 rounded-full mx-auto mb-1 sm:hidden shrink-0"></div>
+
+                <!-- Header -->
+                <div class="flex justify-between items-center shrink-0">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Semesters</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">Add Semester</h3>
+                    </div>
+                    <button id="btnCloseAddModal"
+                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-high/70 dark:bg-white/10 hover:bg-surface-container-highest border border-outline-variant/20 dark:border-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all hover:rotate-90 active:scale-90 cursor-pointer shrink-0"
+                        title="Close dialog">
+                        <span class="material-symbols-outlined text-base sm:text-lg">close</span>
                     </button>
                 </div>
 
-                <!-- Step 1: Course Data Source -->
-                <div id="semesterStep1" class="flex flex-col gap-4">
-                    <p class="text-sm font-medium text-on-surface-variant leading-relaxed">How would you like to add
-                        courses for this semester?</p>
+                <!-- Step 1: Course Data Source (Interactive Choice Cards) -->
+                <div id="semesterStep1" class="flex flex-col gap-3.5">
+                    <p class="text-xs font-semibold text-on-surface-variant leading-relaxed">
+                        Choose how you would like to initialize courses for this semester:
+                    </p>
 
-                    <button id="btnSaveCurrent"
-                        class="w-full bg-primary-container text-white p-4 rounded-xl font-bold hover:bg-[#1f1366] transition-all focus:ring-2 focus:ring-primary shadow-lg flex flex-col items-center gap-2 group">
-                        <span
-                            class="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">download_done</span>
-                        <span>Use Current Table Courses</span>
-                        <span class="text-[10px] font-normal opacity-80">Saves current grades and clears table</span>
+                    <!-- Choice 1: Use Current Table Courses -->
+                    <button id="btnSaveCurrent" type="button"
+                        class="w-full text-left p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-surface-container to-surface-container-low border-2 border-primary/35 hover:border-primary shadow-sm hover:shadow-md transition-all group flex items-start gap-3.5 active:scale-[0.99] cursor-pointer">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                            <span class="material-symbols-outlined text-2xl">download_done</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="font-extrabold text-sm sm:text-base text-on-surface">Use Current Table Courses</span>
+                                <span class="material-symbols-outlined text-primary group-hover:translate-x-0.5 transition-transform text-lg shrink-0">chevron_right</span>
+                            </div>
+                            <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                                Archives currently calculated table courses into this semester and resets calculator.
+                            </p>
+                            <div class="mt-2.5 flex items-center gap-2">
+                                <span id="step1CurrentCoursesCount" class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    <span id="step1CountText">Courses ready</span>
+                                </span>
+                            </div>
+                        </div>
                     </button>
 
-                    <button id="btnStartFresh"
-                        class="w-full bg-surface-container-high border-2 border-transparent text-on-surface p-4 rounded-xl font-bold hover:border-primary transition-all focus:ring-2 focus:ring-primary flex flex-col items-center gap-2 group">
-                        <span
-                            class="material-symbols-outlined text-3xl text-outline-variant group-hover:text-primary transition-colors">restart_alt</span>
-                        <span>Start Fresh</span>
-                        <span class="text-[10px] font-normal text-on-surface-variant">Reset table & add courses
-                            specifically</span>
+                    <!-- Choice 2: Start Fresh -->
+                    <button id="btnStartFresh" type="button"
+                        class="w-full text-left p-4 rounded-2xl bg-surface-container-low/80 hover:bg-surface-container border border-outline-variant/30 hover:border-primary/50 shadow-xs hover:shadow-sm transition-all group flex items-start gap-3.5 active:scale-[0.99] cursor-pointer">
+                        <div class="w-11 h-11 rounded-xl bg-surface-container-high text-on-surface-variant group-hover:text-primary flex items-center justify-center shrink-0 border border-outline-variant/20 group-hover:scale-105 transition-all">
+                            <span class="material-symbols-outlined text-2xl">restart_alt</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="font-extrabold text-sm sm:text-base text-on-surface">Start Fresh</span>
+                                <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform text-lg shrink-0">chevron_right</span>
+                            </div>
+                            <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                                Clear current table and add specific courses manually for this semester.
+                            </p>
+                            <div class="mt-2.5">
+                                <span class="text-[10px] font-bold text-on-surface-variant/70 uppercase tracking-wider">
+                                    Resets calculator table
+                                </span>
+                            </div>
+                        </div>
                     </button>
                 </div>
 
                 <!-- Step 2: Semester Details -->
-                <div id="semesterStep2" class="hidden flex-col gap-5">
-                    <div>
-                        <label
-                            class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Semester
-                            Number</label>
-                        <select id="semNumber"
-                            class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary appearance-none outline-none transition-opacity">
-                            <option value="1">Semester 1</option>
-                            <option value="2">Semester 2</option>
-                            <option value="3">Semester 3</option>
-                            <option value="4">Semester 4</option>
-                            <option value="5">Semester 5</option>
-                            <option value="6">Semester 6</option>
-                            <option value="7">Semester 7</option>
-                            <option value="8">Semester 8</option>
-                            <option value="Summer">Summer Semester</option>
-                        </select>
+                <div id="semesterStep2" class="hidden flex-col gap-4">
+                    <!-- Step 2 Top Bar with Back Button -->
+                    <div class="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+                        <button id="btnBackToAddStep1" type="button"
+                            class="inline-flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-primary transition-colors py-1 px-2 rounded-lg hover:bg-primary/10 active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">arrow_back</span>
+                            <span>Back to Options</span>
+                        </button>
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                            Step 2 of 2
+                        </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label
-                                class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Semester</label>
-                            <select id="semTerm"
-                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary appearance-none outline-none">
-                                <option value="Fall">Fall</option>
-                                <option value="Spring">Spring</option>
-                                <option value="Summer">Summer</option>
+
+                    <!-- Semester Number -->
+                    <div>
+                        <label class="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5">
+                            Semester Number
+                        </label>
+                        <div class="relative">
+                            <select id="semNumber"
+                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-semibold text-on-surface focus:ring-2 focus:ring-primary focus:border-primary appearance-none outline-none transition-all pr-10 cursor-pointer">
+                                <option value="1">Semester 1</option>
+                                <option value="2">Semester 2</option>
+                                <option value="3">Semester 3</option>
+                                <option value="4">Semester 4</option>
+                                <option value="5">Semester 5</option>
+                                <option value="6">Semester 6</option>
+                                <option value="7">Semester 7</option>
+                                <option value="8">Semester 8</option>
+                                <option value="Summer">Summer Semester</option>
                             </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-xl">
+                                expand_more
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Term & Year -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5">
+                                Term
+                            </label>
+                            <div class="relative">
+                                <select id="semTerm"
+                                    class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-3 text-sm font-semibold text-on-surface focus:ring-2 focus:ring-primary focus:border-primary appearance-none outline-none transition-all pr-9 cursor-pointer">
+                                    <option value="Fall">Fall</option>
+                                    <option value="Spring">Spring</option>
+                                    <option value="Summer">Summer</option>
+                                </select>
+                                <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-xl">
+                                    expand_more
+                                </span>
+                            </div>
                         </div>
                         <div>
-                            <label
-                                class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Year</label>
+                            <label class="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5">
+                                Year
+                            </label>
                             <input type="number" id="semYear"
-                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary outline-none"
+                                class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-3 text-sm font-semibold text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                                 placeholder="e.g. 2025">
                         </div>
                     </div>
 
                     <!-- Repeated Courses Warning Box in Step 2 -->
                     <div id="semRepeatedCoursesNotice"
-                        class="hidden p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex flex-col gap-1.5">
+                        class="hidden p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-800 dark:text-amber-300 text-xs flex flex-col gap-1.5 shadow-xs">
                         <div class="flex items-center gap-1.5 font-bold">
-                            <span
-                                class="material-symbols-outlined text-sm text-amber-600 dark:text-amber-400">repeat</span>
+                            <span class="material-symbols-outlined text-base text-amber-600 dark:text-amber-400">repeat</span>
                             <span>Repeating Course(s) Detected</span>
                         </div>
                         <p class="text-[11px] text-on-surface-variant leading-snug">
-                            This semester contains repeating course(s):
+                            This semester contains repeating courses that will update your CGPA:
                         </p>
                         <ul id="semRepeatedCoursesList"
                             class="list-disc list-inside text-[11px] font-semibold space-y-1 mt-0.5">
@@ -2402,10 +2812,139 @@
                     </div>
 
                     <button id="btnConfirmSem"
-                        class="w-full mt-2 bg-primary-container text-white py-3.5 rounded-xl font-black text-sm hover:bg-[#1f1366] transition-colors shadow-lg">
-                        Save & Continue
+                        class="w-full mt-1.5 bg-gradient-to-r from-primary to-indigo-600 hover:brightness-110 text-white py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-primary/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">check</span>
+                        <span>Save Semester</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Semester Details Pop-Up Modal (Modern Glassmorphic Sheet) -->
+        <div id="semesterDetailsView"
+            class="fixed inset-0 z-[100] flex hidden">
+
+            <div id="semesterDetailsCard">
+
+                <!-- Mobile Sheet Grab Handle -->
+                <div class="w-10 h-[5px] bg-outline-variant/40 dark:bg-white/25 rounded-full mx-auto mb-2 sm:hidden shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+                <!-- Details Header -->
+                <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                <span id="detailSemBadge">Semester Record</span>
+                            </span>
+                        </div>
+                        <h3 id="detailSemTitle"
+                            class="text-xl sm:text-2xl font-black text-on-surface tracking-tight break-words">
+                            Fall 2025 (Semester 1)
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 pt-0.5">
+                        <button id="btnEditSemMarks"
+                            class="px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
+                            title="Edit course marks in this semester">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            <span class="hidden xs:inline">Edit Marks</span>
+                        </button>
+                        <button id="btnCloseDetails"
+                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-high/70 dark:bg-white/10 hover:bg-surface-container-highest border border-outline-variant/20 dark:border-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all hover:rotate-90 active:scale-90 cursor-pointer shrink-0"
+                            title="Close details">
+                            <span class="material-symbols-outlined text-base sm:text-lg">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modern Bento Metrics Bar -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-3 my-2.5 sm:my-3 p-1.5 sm:p-2 bg-surface-container-low/60 dark:bg-black/25 rounded-2xl sm:rounded-3xl border border-outline-variant/15 dark:border-white/5 shrink-0">
+                    <!-- SGPA Bento -->
+                    <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-b from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/5 border border-primary/25 shadow-xs cursor-default">
+                        <div class="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-primary mb-0.5">
+                            <span class="material-symbols-outlined text-xs">stars</span>
+                            <span>SGPA</span>
+                        </div>
+                        <strong id="detailSemGPA" class="text-xl sm:text-2xl font-black text-primary tracking-tight">0.00</strong>
+                        <span class="text-[9px] font-semibold text-on-surface-variant/70 tracking-wide mt-0.5 hidden xs:inline">Grade Point Avg</span>
+                    </div>
+
+                    <!-- Credits Bento -->
+                    <div class="sem-stat-pillar flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-surface-container/60 dark:bg-white/5 border border-outline-variant/15 dark:border-white/5 cursor-default">
+                        <div class="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant mb-0.5">
+                            <span class="material-symbols-outlined text-xs text-primary">school</span>
+                            <span>Credits</span>
+                        </div>
+                        <strong id="detailSemCredits" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">0</strong>
+                        <span class="text-[9px] font-semibold text-on-surface-variant/70 tracking-wide mt-0.5 hidden xs:inline">Credit Hours</span>
+                    </div>
+
+                    <!-- Courses Bento -->
+                    <div id="detailSemCoursesCountBadge" class="sem-stat-pillar flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-surface-container/60 dark:bg-white/5 border border-outline-variant/15 dark:border-white/5 cursor-default">
+                        <div class="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-on-surface-variant mb-0.5">
+                            <span class="material-symbols-outlined text-xs text-primary">menu_book</span>
+                            <span>Courses</span>
+                        </div>
+                        <strong id="detailSemCoursesCount" class="text-xl sm:text-2xl font-black text-on-surface tracking-tight">0</strong>
+                        <span class="text-[9px] font-semibold text-on-surface-variant/70 tracking-wide mt-0.5 hidden xs:inline">Enrolled Total</span>
+                    </div>
+                </div>
+
+                <!-- Edit Marks Active Action Bar -->
+                <div id="semEditActionBar"
+                    class="hidden mb-3 p-3 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 border border-primary/30 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0 shadow-xs">
+                    <div class="flex items-center gap-2 text-xs font-bold text-primary">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-ping shrink-0"></span>
+                        <span>Editing marks. SGPA recalculates live.</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnCancelEditMarks" type="button"
+                            class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-bold rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-all text-on-surface cursor-pointer">
+                            Cancel
+                        </button>
+                        <button id="btnSaveEditMarks" type="button"
+                            class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-black rounded-xl bg-gradient-to-r from-primary to-indigo-600 text-white hover:brightness-110 shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">check</span> Save Changes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Desktop Table View (sm and above) with Smooth Isolated Touch Scroll -->
+                <div class="hidden sm:block overflow-y-auto max-h-[44vh] pr-1 rounded-2xl border border-outline-variant/15 dark:border-white/5 bg-surface-container-low/40 dark:bg-black/20" data-lenis-prevent>
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 z-10 bg-surface-container-high/90 dark:bg-[#18192d]/95 backdrop-blur-md">
+                            <tr class="text-[10px] uppercase tracking-wider text-on-surface-variant/80 border-b border-outline-variant/20 dark:border-white/10">
+                                <th class="py-3 px-4 font-extrabold">Course</th>
+                                <th class="py-3 px-2 font-extrabold text-center">Credits</th>
+                                <th class="py-3 px-2 font-extrabold text-center">Marks</th>
+                                <th class="py-3 px-4 font-extrabold text-right">Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailSemCourses"
+                            class="text-sm font-medium divide-y divide-outline-variant/10 dark:divide-white/5">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Cards List (< sm) with Smooth Isolated Touch Scroll -->
+                <div id="detailSemCoursesMobile"
+                    class="sm:hidden flex flex-col gap-2.5 overflow-y-auto max-h-[46vh] pr-0.5 overscroll-contain"
+                    data-lenis-prevent>
+                </div>
+
+                <!-- Details Footer -->
+                <div class="mt-3 pt-3 border-t border-outline-variant/15 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+                    <div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant font-medium justify-center sm:justify-start">
+                        <span class="material-symbols-outlined text-sm text-primary">verified</span>
+                        <span>Semester course and grade archive</span>
+                    </div>
+                    <button id="btnDeleteSemester"
+                        class="px-3.5 py-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">delete</span> Delete Semester
+                    </button>
+                </div>
+
             </div>
         </div>
 
@@ -2415,7 +2954,7 @@
             <div class="bg-surface-container rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-outline-variant/30 shadow-2xl flex flex-col gap-6 transform scale-95 transition-transform duration-300"
                 id="versionModalContent" data-lenis-prevent>
                 <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-black text-on-surface">Version 2.3 Changes</h3>
+                    <h3 class="text-2xl font-black text-on-surface">Version 2.3.0 Changes</h3>
                     <button id="btnCloseVersionModal" class="text-outline-variant hover:text-error transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>

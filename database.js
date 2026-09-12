@@ -166,7 +166,7 @@ const DATABASE = {
         6: [
           { code: "SEC 3608", name: "Software Quality Engineering and Testing", credits: 3, type: "Core" },
           { code: "CSC 4107", name: "Information Security", credits: 2, type: "Core" },
-          { code: "CSC 4107", name: "Lab: Information Security", credits: 1, type: "Core" },
+          { code: "CSCL 4107", name: "Lab: Information Security", credits: 1, type: "Core" },
           { code: "CSC 4109", name: "Professional Practices", credits: 2, type: "Core" },
           { code: "SEC xxxx", name: "SE Elective-1", credits: 3, type: "Elective" },
           { code: "SEC xxxx", name: "SE Elective-2", credits: 3, type: "Elective" },

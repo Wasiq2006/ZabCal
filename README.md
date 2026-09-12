@@ -2,7 +2,7 @@
 
 A modern, intuitive, and lightweight CGPA calculator designed specifically for SZABIST students. Track your academic performance with real-time GPA calculations, course management, and degree progress tracking.
 
-![CGPA Calculator](https://img.shields.io/badge/Version-2.2.0-blue)
+![CGPA Calculator](https://img.shields.io/badge/Version-2.3.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
