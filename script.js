@@ -1525,11 +1525,9 @@ class UIManager {
 
         window.lenis?.stop();
         detailsView.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                detailsView.classList.add('sem-modal-active');
-            });
-        });
+        // Force reflow so browser registers pre-transition base state (Firefox/Zen compat)
+        void detailsView.offsetHeight;
+        detailsView.classList.add('sem-modal-active');
 
         const editActionBar = document.getElementById('semEditActionBar');
         const btnEditMarks = document.getElementById('btnEditSemMarks');

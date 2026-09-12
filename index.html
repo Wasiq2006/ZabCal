@@ -775,8 +775,7 @@
             padding: 0;
             pointer-events: none;
             transition: background 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-                        backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-                        -webkit-backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+                        backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         /* Desktop: center-aligned */
@@ -2209,7 +2208,7 @@
                             <div class="relative w-full sm:w-56 min-w-0">
                                 <label
                                     class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Department</label>
-                                <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
+                                <div class="relative timetable-input-wrapper rounded-full transition-all focus-within:ring-2 focus-within:ring-primary/40">
                                     <select id="departmentSelector"
                                         class="w-full appearance-none bg-transparent text-on-surface text-xs sm:text-sm font-semibold px-3.5 py-2.5 pr-8 focus:outline-none cursor-pointer">
                                         <option value="Computer Science">Computer Science</option>
@@ -2225,7 +2224,7 @@
                             <div class="relative w-full sm:w-44 min-w-0">
                                 <label
                                     class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Section</label>
-                                <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
+                                <div class="relative timetable-input-wrapper rounded-full transition-all focus-within:ring-2 focus-within:ring-primary/40">
                                     <select id="sectionSelector"
                                         class="w-full appearance-none bg-transparent text-on-surface text-xs sm:text-sm font-semibold px-3.5 py-2.5 pr-8 focus:outline-none cursor-pointer">
                                         <option value="" disabled selected>Choose Section</option>
@@ -2241,7 +2240,7 @@
                             <label
                                 class="text-[9px] uppercase tracking-wider font-bold text-on-surface-variant/70 block mb-1">Search
                                 Schedule</label>
-                            <div class="relative timetable-input-wrapper rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/40">
+                            <div class="relative timetable-input-wrapper rounded-full transition-all focus-within:ring-2 focus-within:ring-primary/40">
                                 <span
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-lg pointer-events-none">search</span>
                                 <input type="text" id="timetableSearchInput"
