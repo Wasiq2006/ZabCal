@@ -74,7 +74,7 @@ No installation required! This is a client-side application.
 ## Technical Architecture
 
 ### Technology Stack
-- **Frontend**: HTML5, CSS3 (Tailwind CSS), Vanilla JavaScript (ES6+).
+- **Frontend**: HTML5, CSS3 (Tailwind CSS v3, pre-built), Vanilla JavaScript (ES6+).
 - **Storage**: Browser `localStorage` API.
 - **Data**: In-memory curriculum database (`database.js`).
 - **UI Components**: Glassmorphism design with Inter font family.
@@ -97,6 +97,10 @@ ZabCal/
 ├── database.js  # Comprehensive SZABIST curriculum data
 ├── Animation.js # Vector-based splash/intro animation engine
 ├── manifest.json # PWA configuration for mobile installation
+├── sw.js         # Service worker for offline use
+├── icons/        # PWA and favicon icons
+├── tailwind.config.js / tailwind.input.css  # Tailwind build inputs
+├── tailwind.css  # Generated stylesheet (npm run build:css)
 └── README.md      # Project documentation
 ```
 
@@ -104,9 +108,9 @@ ZabCal/
 
 ## Privacy & Security
 
-- **100% Client-Side**: No backend, no API calls, no data transmission.
+- **100% Client-Side**: No backend. Your courses, marks and semesters are never sent anywhere.
 - **Data Ownership**: Your academic records are stored only in your browser's local storage.
-- **Zero Tracking**: No analytics or cookies used.
+- **Anonymous Analytics**: The hosted site (zabcal.vercel.app) uses [Vercel Web Analytics](https://vercel.com/docs/analytics/privacy-policy) to count page views. It sets no cookies and never sees your academic data.
 
 ---
 
