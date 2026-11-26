@@ -2,10 +2,10 @@
 
 ## Tech Stack
 - **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
-- **Styling**: Tailwind CSS (via CDN), Custom Glassmorphism CSS
+- **Styling**: Tailwind CSS v3 (pre-built to `tailwind.css`), Custom Glassmorphism CSS
 - **Storage**: Browser `localStorage`
 - **Visualization**: Chart.js
-- **PWA**: Manifest-based mobile installation
+- **PWA**: `manifest.json` + `sw.js` service worker (offline support)
 
 ## Code Style
 - **Patterns**: Class-based separation of concerns (`StateManager`, `CurriculumHandler`, `GradingEngine`, `UIManager`).
@@ -18,7 +18,9 @@
 - **Validation**: Input validation for marks (0-100) and course code existence in `database.js`.
 
 ## Build & Run
-- **Dev**: Open `index.html` in any modern web browser.
+- **Dev**: Open `index.html` in any modern web browser (the service worker only registers over http/https).
+- **CSS**: After adding or changing Tailwind classes in `index.html`/`script.js`/`Animation.js`, run `npm install` once, then `npm run build:css` (or `npm run watch:css`) and commit the regenerated `tailwind.css`. Theme tokens live in `tailwind.config.js`.
+- **Cache busting**: Bump the `?v=N` on a changed script in `index.html`, and mirror it in `APP_SHELL` in `sw.js`.
 - **PWA**: Serve via HTTPS to enable installation via `manifest.json`.
 
 ## Project Structure
@@ -26,7 +28,10 @@
 - `script.js` $\rightarrow$ Application logic, grading engine, and UI orchestration.
 - `database.js` $\rightarrow$ SZABIST curriculum source of truth.
 - `Animation.js` $\rightarrow$ Page loading and intro reveal animation engine.
-- `manifest.json` $\rightarrow$ PWA configuration.
+- `manifest.json` $\rightarrow$ PWA configuration; icons in `icons/`.
+- `sw.js` $\rightarrow$ Service worker (network-first for app files, cache-first for pinned CDN files).
+- `tailwind.config.js`, `tailwind.input.css` $\rightarrow$ Tailwind build inputs; `tailwind.css` is the generated output.
+- `timetableData.js` $\rightarrow$ Timetable data (feature is behind `TIMETABLE_COMING_SOON` in `script.js`).
 
 ## Conventions
 - **Grading**: Marks are rounded to the nearest integer before GPA lookup.

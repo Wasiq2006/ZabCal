@@ -15,6 +15,10 @@ const GRADING_POLICY = {
     0: { grade: 'F', gpa: 0.0 }
 };
 
+// Timetable is a work in progress: while true, the Timetable view shows a "Coming soon"
+// panel and the timetable engine is not initialised. Set to false to re-enable it.
+const TIMETABLE_COMING_SOON = true;
+
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -288,7 +292,8 @@ class UIManager {
             this.setupEventListeners();
             this.setupSemesterListeners();
             this.setupDataManagementListeners();
-            this.initTimetable();
+            this.applyTimetableAvailability();
+            if (!TIMETABLE_COMING_SOON) this.initTimetable();
             this._isInitialized = true;
         }
         this.restoreState();
@@ -900,12 +905,18 @@ class UIManager {
         });
 
         let effectiveCoursesForCGPA = [];
+        // Earned credits only: an F still counts in the CGPA average (attempted credits)
+        // but must not count towards degree progress, remaining credits or standing.
         let totalCredits = 0;
+        const isPassed = (course) => {
+            const grade = this.gradingEngine.calculateGrade(course.marks);
+            return !!grade && grade.grade !== 'F';
+        };
 
         Object.values(grouped).forEach(attempts => {
             if (attempts.length === 1) {
                 effectiveCoursesForCGPA.push(attempts[0]);
-                totalCredits += attempts[0].credits;
+                if (isPassed(attempts[0])) totalCredits += attempts[0].credits;
             } else {
                 // Pick the highest grade/marks attempt
                 attempts.sort((a, b) => {
@@ -916,7 +927,8 @@ class UIManager {
                 });
                 const best = attempts[0];
                 effectiveCoursesForCGPA.push(best);
-                totalCredits += best.credits; // Credit counted only once towards degree
+                // Credit counted only once towards degree, and only if the best attempt passed
+                if (isPassed(best)) totalCredits += best.credits;
             }
         });
 
@@ -1392,7 +1404,7 @@ class UIManager {
 
         if (this._activeView === 'semesters') {
             this.renderSemestersList();
-        } else if (this._activeView === 'timetable') {
+        } else if (this._activeView === 'timetable' && !TIMETABLE_COMING_SOON) {
             this.renderTimetableInteractive();
             this.renderPDFPreview();
         } else if (this._activeView === 'calculator') {
@@ -1944,6 +1956,15 @@ class UIManager {
         }
     }
 
+    // Show either the "Coming soon" panel or the real timetable, based on TIMETABLE_COMING_SOON.
+    applyTimetableAvailability() {
+        document.getElementById('timetableComingSoon')?.classList.toggle('hidden', !TIMETABLE_COMING_SOON);
+        document.getElementById('timetableContent')?.classList.toggle('hidden', TIMETABLE_COMING_SOON);
+        document.querySelectorAll('[data-timetable-soon-badge]').forEach(el => {
+            el.classList.toggle('hidden', !TIMETABLE_COMING_SOON);
+        });
+    }
+
     initTimetable() {
         const departmentSelector = document.getElementById('departmentSelector');
         const sectionSelector = document.getElementById('sectionSelector');
@@ -2486,3 +2507,13 @@ document.addEventListener('DOMContentLoaded', () => {
         el.textContent = new Date().getFullYear();
     });
 });
+
+// Offline support for the installed PWA. Service workers only run over http(s),
+// so opening index.html straight from disk (file://) simply skips this.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.warn('Service worker registration failed:', err);
+        });
+    });
+}

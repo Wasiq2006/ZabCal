@@ -24,14 +24,14 @@
     <meta property="og:title" content="ZabCal - SZABIST CGPA & GPA Calculator">
     <meta property="og:description"
         content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, track repeating courses, and manage semesters.">
-    <meta property="og:image" content="favicon.png">
+    <meta property="og:image" content="icons/icon-512.png">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="ZabCal - SZABIST CGPA & GPA Calculator">
     <meta name="twitter:description"
         content="ZabCal is the fast, modern, and accurate SZABIST CGPA & GPA calculator. Calculate SGPA, cumulative CGPA, and track your degree progress.">
-    <meta name="twitter:image" content="favicon.png">
+    <meta name="twitter:image" content="icons/icon-512.png">
 
     <!-- Structured Data (JSON-LD) for Search Engines -->
     <script type="application/ld+json">
@@ -58,15 +58,14 @@
     }
     </script>
 
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ZabCal">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="ZabCal">
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -76,76 +75,7 @@
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "surface-bright": "#f9f9ff",
-                        "primary-container": "#27187e",
-                        "on-secondary-fixed": "#1a173a",
-                        "inverse-primary": "#c6c0ff",
-                        "on-tertiary": "#ffffff",
-                        "secondary-container": "#d5cffd",
-                        "on-error-container": "#93000a",
-                        "surface-container": "#ededf5",
-                        "tertiary-fixed-dim": "#ffb598",
-                        "outline-variant": "#c8c4d4",
-                        "on-surface-variant": "#474552",
-                        "secondary-fixed-dim": "#c7c1ef",
-                        "on-surface": "#191b21",
-                        "surface-tint": "#5a51b2",
-                        "error-container": "#ffdad6",
-                        "tertiary-container": "#531a00",
-                        "inverse-surface": "#2e3036",
-                        "surface-dim": "#d9d9e1",
-                        "background": "#f9f9ff",
-                        "primary": "#12005d",
-                        "secondary": "#5e5a81",
-                        "surface-container-lowest": "#ffffff",
-                        "outline": "#787583",
-                        "on-secondary-fixed-variant": "#464268",
-                        "surface-container-low": "#f3f3fb",
-                        "secondary-fixed": "#e4dfff",
-                        "on-error": "#ffffff",
-                        "on-background": "#191b21",
-                        "tertiary": "#310c00",
-                        "primary-fixed-dim": "#c6c0ff",
-                        "on-tertiary-fixed": "#370e00",
-                        "on-primary-fixed-variant": "#423899",
-                        "inverse-on-surface": "#f0f0f8",
-                        "surface-container-highest": "#e2e2ea",
-                        "surface-container-high": "#e7e7ef",
-                        "tertiary-fixed": "#ffdbce",
-                        "on-primary": "#ffffff",
-                        "on-primary-container": "#9188ed",
-                        "primary-fixed": "#e4dfff",
-                        "surface-variant": "#e2e2ea",
-                        "on-secondary-container": "#5b577e",
-                        "surface": "#f9f9ff",
-                        "on-primary-fixed": "#150066",
-                        "on-secondary": "#ffffff",
-                        "on-tertiary-container": "#d57d59",
-                        "error": "#ba1a1a",
-                        "on-tertiary-fixed-variant": "#763315"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
-                    },
-                    "fontFamily": {
-                        "headline": ["-apple-system", "BlinkMacSystemFont", "SF Pro Display", "Inter", "sans-serif"],
-                        "body": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Inter", "sans-serif"],
-                        "label": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Inter", "sans-serif"]
-                    }
-                },
-            },
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --color-background: #f9f9ff;
@@ -1631,6 +1561,9 @@
             padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
         }
     </style>
+    <!-- Loaded last so utilities win ties with the custom CSS above (same order the old Play CDN produced).
+         Built from tailwind.input.css + tailwind.config.js: run `npm run build:css` after changing classes. -->
+    <link rel="stylesheet" href="tailwind.css">
 </head>
 
 <body class="bg-surface text-on-surface min-h-screen transition-colors duration-300">
@@ -1673,6 +1606,7 @@
                     onclick="window.uiManager.navigateTo('timetable'); return false;">
                     <span class="material-symbols-outlined text-[18px]">calendar_month</span>
                     <span class="font-['Inter'] uppercase tracking-[0.05em] text-[11px]">Timetable</span>
+                    <span class="ml-1.5 text-[8px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20" data-timetable-soon-badge>Soon</span>
                 </a>
                 <a class="flex items-center space-x-2 px-3.5 py-2 hover:bg-primary/10 text-on-surface-variant hover:text-primary font-bold rounded-xl transition-all ui-button"
                     data-nav-view="about" href="#about" onclick="window.uiManager.navigateTo('about'); return false;">
@@ -2165,7 +2099,26 @@
 
         <!-- Timetable View -->
         <main class="flex-1 w-full max-w-full min-w-0 p-3.5 sm:p-8 md:p-12 pb-28 md:pb-12 min-h-screen overflow-x-hidden hidden" id="timetableView">
-            <div class="max-w-6xl mx-auto w-full min-w-0">
+            <!-- COMING SOON placeholder. The real timetable below is a work in progress and kept intact;
+                 flip TIMETABLE_COMING_SOON in script.js to false to bring it back. -->
+            <section id="timetableComingSoon" class="max-w-xl mx-auto w-full min-h-[70vh] flex flex-col items-center justify-center text-center px-4 anim-fade-up">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-primary text-[44px] sm:text-[52px]">calendar_month</span>
+                </div>
+                <span class="text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 mb-4">Coming soon</span>
+                <h1 class="text-3xl sm:text-5xl font-black text-primary tracking-tighter leading-none mb-4">Timetable.</h1>
+                <p class="text-sm sm:text-base text-on-surface-variant font-medium leading-relaxed max-w-md mb-8">
+                    Section-wise SZABIST class schedules with day filters, search and a printable PDF view.
+                    It will be available here once the official timetable data is verified.
+                </p>
+                <button onclick="window.uiManager.navigateTo('calculator')"
+                    class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary-container text-white font-bold text-sm hover:opacity-90 active:scale-95 transition-all ui-button">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span>Back to Calculator</span>
+                </button>
+            </section>
+
+            <div id="timetableContent" class="hidden max-w-6xl mx-auto w-full min-w-0">
                 <!-- Timetable Header Bar: iOS Large Title Navigation -->
                 <div class="flex flex-col gap-2.5 mb-5 sm:mb-7 anim-fade-up">
                     <!-- iOS Navigation Top Bar with back chevron and metadata pills -->
@@ -3001,7 +2954,7 @@
     <script src="Animation.js?v=1"></script>
     <script src="timetableData.js?v=2"></script>
     <script src="database.js?v=5"></script>
-    <script src="script.js?v=12"></script>
+    <script src="script.js?v=13"></script>
 </body>
 
 </html>
